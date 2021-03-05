@@ -1,3 +1,6 @@
+# Kaggle data
+nbs/data/
+
 *.bak
 .gitattributes
 .last_checked
