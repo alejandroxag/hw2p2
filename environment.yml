@@ -18,6 +18,7 @@ dependencies:
   - statsmodels
   - scikit-learn
   - tqdm
-  - jupyter
   - pip:
     - nbdev
+    - jupyter
+# Necessary run pip install -e . to install the package
