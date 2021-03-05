@@ -31,3 +31,12 @@ __all__ = []
 
 # Cell
 # !kaggle competitions download -c 11785-spring2021-hw2p2s2-face-verification
+
+# Cell
+# Data unziping
+
+# from zipfile import ZipFile
+
+# with ZipFile('nbs/data/competitions/11785-spring2021-hw2p2s1-face-classification/11785-spring2021-hw2p2s1-face-classification.zip', ) as zf: zf.extractall(path='nbs/data/s1')
+
+# with ZipFile('nbs/data/competitions/11785-spring2021-hw2p2s1-face-classification/11785-spring2021-hw2p2s1-face-classification.zip', ) as zf: zf.extractall(path='nbs/data/s2')
