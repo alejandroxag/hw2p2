@@ -2,10 +2,14 @@
 
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
-index = {}
+index = {"FaceClassificationDataset": "datasets.ipynb",
+         "fit_predict": "hyper_p_opt.ipynb",
+         "FaceClassificationCNN": "models.ipynb"}
 
 modules = ["datasets.py",
-           "kaggle_data_setup.py"]
+           "hyperoptimization.py",
+           "kaggle_data_setup.py",
+           "models.py"]
 
 doc_url = "https://alejandroxag.github.io/axa_hw2p2/"
 
