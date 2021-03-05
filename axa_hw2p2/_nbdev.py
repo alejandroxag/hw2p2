@@ -4,7 +4,8 @@ __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
 index = {}
 
-modules = ["kaggle_data_setup.py"]
+modules = ["datasets.py",
+           "kaggle_data_setup.py"]
 
 doc_url = "https://alejandroxag.github.io/axa_hw2p2/"
 
