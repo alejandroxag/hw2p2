@@ -83,7 +83,7 @@ class FaceClassificationCNN():
         self.model = _FaceClassificationCNN(n_ch_input=n_ch_input,
                                             n_classes=n_classes)
 
-
+        # self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     def fit(self, train_loader, val_loader):
         print("="*30 + 'Start Fitting' + "="*30)
