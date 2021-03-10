@@ -2,11 +2,14 @@
 
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
-index = {"FaceClassificationDataset": "datasets.ipynb",
+index = {"CenterLoss": "center_loss.ipynb",
+         "FaceClassificationDataset": "datasets.ipynb",
+         "FaceVerificationDataset": "datasets.ipynb",
          "fit_predict": "hyper_p_opt.ipynb",
-         "FaceClassificationCNN": "models.ipynb"}
+         "MobileNetV2": "models.ipynb"}
 
-modules = ["datasets.py",
+modules = ["losses.py",
+           "datasets.py",
            "hyperoptimization.py",
            "kaggle_data_setup.py",
            "models.py"]
