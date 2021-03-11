@@ -4,10 +4,13 @@ __all__ = ['MobileNetV2']
 
 # Cell
 #imports
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
+from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d
+from sklearn.metrics import roc_auc_score
 from .losses import CenterLoss
 
 # Cell
@@ -162,8 +165,8 @@ class _MobileNetV2(nn.Module):
         """
         """
         x = self.net(x)
-        x = nn.adaptive_avg_pool2d(x, 1)
-        embeddings = x.view(1, -1)
+        x = adaptive_avg_pool2d(x, 1).reshape(x.shape[0], -1)
+        embeddings = x
         cl_output = self.classifier(x)
 
         return embeddings, cl_output
@@ -174,14 +177,6 @@ class _MobileNetV2(nn.Module):
 
 
 # Cell
-
-# n_in_ch_bn: int,
-#                  ls_out_ch_bn: list,
-#                  ls_n_rep_bn: list,
-#                  ls_stride_bn: list,
-#                  ls_exp_fct_t_bn: list,
-#                  nembeddings: int,
-#                  n_classes: int
 class MobileNetV2():
     """
     """
@@ -191,13 +186,13 @@ class MobileNetV2():
                  ls_n_rep_bn: list,
                  ls_stride_bn: list,
                  ls_exp_fct_t_bn: list,
-                 nembeddings: int,
+                 n_embeddings: int,
                  n_classes: int,
                  lr: float,
                  lr_decay: float,
+                 n_lr_decay_steps: int,
                  lr_cl: float,
                  alpha_cl: float,
-                 n_lr_decay_steps: int,
                  n_epochs: int,
                  eval_steps: int):
 
@@ -229,51 +224,54 @@ class MobileNetV2():
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    def fit(self, train_loader, val_loader):
+    def fit(self, train_loader, val_c_loader, val_v_loader):
 
         print("="*30 + 'Start Fitting' + "="*30)
         self.model.to(self.device)
         self.model.train()
 
         cross_entroypy_loss_f = nn.CrossEntropyLoss()
-        center_loss_f = CenterLoss(num_classes=n_classes,
-                                 feat_dim=n_embeddings,
-                                 use_gpu=torch.cuda.is_available())
+        center_loss_f = CenterLoss(num_classes=self.n_classes,
+                                   feat_dim=self.n_embeddings,
+                                   use_gpu=torch.cuda.is_available())
 
         optimizer = Adam(self.model.parameters(),
                          lr=self.lr,
                          weight_decay=0.0005)
         optimizer_centerloss = Adam(center_loss_f.parameters(),
-                                    lr=lr_cl)
+                                    lr=self.lr_cl)
 
         scheduler = StepLR(optimizer=optimizer,
                            step_size=self.n_epochs//self.n_lr_decay_steps,
                            gamma=self.lr_decay)
 
         self.train_loss = -1
-        self.val_loss = -1
+        self.val_c_loss = -1
         self.trajectories = {'epoch': [],
                              'train_loss': [],
-                             'val_loss': []}
+                             'val_c_loss': [],
+                             'val_c_acc': [],
+                             'val_v_acc':[]}
 
         for epoch in range(self.n_epochs):
 
             train_loss = 0
 
             for batch_idx, (img, label) in enumerate(train_loader):
-
+                print(f'Train. epoch: {epoch}, batch_idx: {batch_idx}')
                 img = img.to(self.device)
                 label = label.to(self.device)
 
                 embeddings, cl_output = self.model(img)
-                loss = alpha_cl * center_loss_f(cl_output, label) + \
+
+                loss = self.alpha_cl * center_loss_f(embeddings, label) + \
                        cross_entroypy_loss_f(cl_output, label)
 
                 optimizer.zero_grad()
                 optimizer_centerloss.zero_grad()
                 loss.backward()
                 for p in center_loss_f.parameters():
-                    p.grad.data *= (1./alpha_cl)
+                    p.grad.data *= (1./self.alpha_cl)
 
                 optimizer.step()
                 optimizer_centerloss.step()
@@ -284,48 +282,80 @@ class MobileNetV2():
             train_loss /= len(train_loader)
 
             if epoch % self.eval_steps == 0:
-                val_loss, val_accuracy = self.evaluate_performance(val_loader)
+                val_c_loss, val_c_acc, val_v_acc = \
+                    self.evaluate_performance(val_c_loader,
+                                              val_v_loader)
 
                 self.trajectories['epoch'].append(epoch)
                 self.trajectories['train_loss'].append(train_loss)
-                self.trajectories['val_loss'].append(val_loss)
+                self.trajectories['val_c_loss'].append(val_c_loss)
+                self.trajectories['val_c_acc'].append(val_c_acc)
+                self.trajectories['val_v_acc'].append(val_v_acc)
 
                 display_str = f'epoch: {epoch} '
                 display_str += f'train_loss: {np.round(train_loss,4)} '
-                display_str += f'val_loss: {np.round(val_loss,4)} '
-                display_str += f'val_accuracy: {np.round(val_accuracy,4):.2%}'
+                display_str += f'val_c_loss: {np.round(val_c_loss,4)} '
+                display_str += f'val_c_acc: {np.round(val_c_acc,4):.2%}'
+                display_str += f'val_v_acc: {np.round(val_v_acc,4):.2%}'
                 print(display_str)
 
-                if self.val_loss > val_loss: self.val_loss = val_loss
+                if self.val_c_loss > val_c_loss: self.val_c_loss = val_c_loss
                 if self.train_loss > train_loss: self.train_loss = train_loss
 
         print("="*72+"\n")
 
 
-    def evaluate_performance(self, val_loader):
+    def evaluate_performance(self, val_c_loader, val_v_loader):
 
-        loss_function = nn.CrossEntropyLoss()
-        self.model.to(device)
+        cross_entroypy_loss_f = nn.CrossEntropyLoss()
+        center_loss_f = CenterLoss(num_classes=self.n_classes,
+                                   feat_dim=self.n_embeddings,
+                                   use_gpu=torch.cuda.is_available())
+
+        self.model.to(self.device)
         self.model.eval()
 
-        val_loss = 0.0
+        val_c_loss = 0.0
         total_predictions = 0.0
         correct_predictions = 0.0
 
         with torch.no_grad():
-            for batch_idx, (img, label) in enumerate(val_loader):
+            for batch_idx, (img, label) in enumerate(val_c_loader):
+                print(f'Val class. batch_idx: {batch_idx}')
+                img = img.to(self.device)
+                label = label.to(self.device)
 
-                img = img.to(device)
-                label = label.to(device)
-                outputs = self.model(img)
-                loss = loss_function(outputs, label).detach()
-                val_loss += loss.item()
+                embeddings, cl_output = self.model(img)
 
-                predicted = torch.argmax(outputs, 1)
+                loss = self.alpha_cl * center_loss_f(embeddings, label) + \
+                       cross_entroypy_loss_f(cl_output, label)
+
+                loss = loss.detach()
+                val_c_loss += loss.item()
+
+                predicted = torch.argmax(cl_output, 1)
                 total_predictions += img.size(0)
                 correct_predictions += (predicted == label).sum().item()
 
-        val_loss /= len(val_loader)
-        acc = correct_predictions/total_predictions
+        val_c_loss /= len(val_c_loader)
+        val_c_acc = correct_predictions/total_predictions
 
-        return val_loss, acc
+        similarity = np.array([])
+        ver_bool = np.array([])
+
+        with torch.no_grad():
+            for batch_idx, (img_0, img_1, target) in enumerate(val_v_loader):
+                print(f'Val ver. batch_idx: {batch_idx}')
+                img_0 = img_0.to(self.device)
+                img_1 = img_1.to(self.device)
+
+                emb_0 = self.model(img_0)[0]
+                emb_1 = self.model(img_1)[0]
+
+                sim_score = cosine_similarity(emb_0, emb_1)
+                similarity = np.append(similarity, sim_score.cpu().numpy().reshape(-1))
+                ver_bool = np.append(ver_bool, target)
+
+        val_v_acc = roc_auc_score(ver_bool, similarity)
+
+        return val_c_loss, val_c_acc, val_v_acc
