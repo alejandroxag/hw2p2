@@ -5,11 +5,13 @@ __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 index = {"CenterLoss": "center_loss.ipynb",
          "FaceClassificationDataset": "datasets.ipynb",
          "FaceVerificationDataset": "datasets.ipynb",
+         "main": "face_class_ver.ipynb",
          "fit_predict": "hyper_p_opt.ipynb",
          "MobileNetV2": "models.ipynb"}
 
 modules = ["losses.py",
            "datasets.py",
+           "face_class_ver.py",
            "hyperoptimization.py",
            "kaggle_data_setup.py",
            "models.py"]

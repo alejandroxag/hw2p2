@@ -4,13 +4,31 @@ __all__ = ['fit_predict']
 
 # Cell
 # imports
+import numpy as np
 import torch
-import time
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+import torchvision
+from PIL import Image
+from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d
+from torch.optim import Adam
+from torch.optim.lr_scheduler import StepLR
+from sklearn.metrics import roc_auc_score
+import pandas as pd
 from functools import partial
 from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from hyperopt.pyll.base import scope
 import json
 from datetime import datetime
+import os
+import time
+
+from datasets import FaceClassificationDataset, FaceVerificationDataset
+from losses import CenterLoss
+from models import _BottleNeck, _MobileNetV2, MobileNetV2
+# from axa_hw2p2.datasets import FaceClassificationDataset, FaceVerificationDataset
+# from axa_hw2p2.losses import CenterLoss
+# from axa_hw2p2.models import _BottleNeck, _MobileNetV2, MobileNetV2
 
 # Cell
 def fit_predict(mc, verbose, trials=None):
@@ -23,49 +41,96 @@ def fit_predict(mc, verbose, trials=None):
     print(pd.Series(mc))
     print('='*26+'\n')
 
-    train_dataset = FaceClassificationDataset(mode='train')
-    val_dataset = FaceClassificationDataset(mode='val')
+    np.random.seed(1)
+    sample_train = np.array(range(6))
+    sample_val_c = list(range(2))
+    sample_val_c = np.array([sample_train[i] for i in sample_val_c])
+    sample_val_v = np.array(range(2))
+
+    train_dataset = FaceClassificationDataset(sample_train, mode='train')
+    val_c_dataset = FaceClassificationDataset(sample_val_c, mode='val')
+    val_v_dataset = FaceVerificationDataset(sample_val_v, mode='val')
+
+    # train_dataset = FaceClassificationDataset(mode='train')
+    # val_c_dataset = FaceClassificationDataset(mode='val')
+    # val_v_dataset = FaceVerificationDataset(mode='val')
 
     train_loader = DataLoader(train_dataset,
-                          shuffle=True,
-                          batch_size=mc['batch_size'],
-                          num_workers=num_workers,
-                          pin_memory=True,
-                          drop_last=True)
+                              shuffle=True,
+                              batch_size=mc['batch_size'],
+                              drop_last=True)
 
-    val_loader = DataLoader(val_dataset,
-                            shuffle=False,
-                            batch_size=mc['batch_size'],
-                            num_workers=num_workers,
-                            pin_memory=True,
-                            drop_last=True)
+    val_c_loader = DataLoader(val_c_dataset,
+                              shuffle=False,
+                              batch_size=1,
+                              drop_last=True)
 
-    model = FaceClassificationCNN(n_ch_input=mc['n_ch_input'],
-                                  n_classes=mc['n_classes'],
-                                  lr=mc['lr'],
-                                  lr_decay=float(mc['lr_decay']),
-                                  n_lr_decay_steps=int(mc['n_lr_decay_steps']),
-                                  n_epochs=mc['n_epochs'],
-                                  eval_steps=mc['eval_steps'])
+    val_v_loader = DataLoader(val_v_dataset,
+                              shuffle=False,
+                              batch_size=1,
+                              drop_last=True)
 
-    model.fit(train_loader=train_loader, val_loader=val_loader)
+    # train_loader = DataLoader(train_dataset,
+    #                           shuffle=True,
+    #                           batch_size=mc['batch_size'],
+    #                           num_workers=num_workers,
+    #                           pin_memory=True,
+    #                           drop_last=True)
 
-    s = 'hw2p2-s1' + '_' + now
+    # val_c_loader = DataLoader(val_c_dataset,
+    #                           shuffle=False,
+    #                           batch_size=mc['batch_size'],
+    #                           num_workers=num_workers,
+    #                           pin_memory=True,
+    #                           drop_last=True)
+
+    # val_v_loader = DataLoader(val_v_dataset,
+    #                           shuffle=False,
+    #                           batch_size=mc['batch_size'],
+    #                           num_workers=num_workers,
+    #                           pin_memory=True,
+    #                           drop_last=True)
+
+    model = MobileNetV2(n_in_ch_bn=mc['n_in_ch_bn'],
+                        ls_out_ch_bn=mc['ls_out_ch_bn'],
+                        ls_n_rep_bn=mc['ls_n_rep_bn'],
+                        ls_stride_bn=mc['ls_stride_bn'],
+                        ls_exp_fct_t_bn=mc['ls_exp_fct_t_bn'],
+                        n_embeddings=mc['n_embeddings'],
+                        n_classes=mc['n_classes'],
+                        lr=mc['lr'],
+                        lr_decay=mc['lr_decay'],
+                        n_lr_decay_steps=mc['n_lr_decay_steps'],
+                        lr_cl=mc['lr_cl'],
+                        alpha_cl=mc['alpha_cl'],
+                        n_epochs=mc['n_epochs'],
+                        eval_steps=mc['eval_steps'])
+
+    model.fit(train_loader=train_loader,
+              val_c_loader=val_c_loader,
+              val_v_loader=val_v_loader)
+
+    this_mc = {'loss': model.val_c_loss,
+                'val_c_acc': model.val_c_acc,
+                'val_v_acc': model.val_v_acc,
+                'mc': mc,
+                'run_time': time.time()-start_time,
+                'trajectories': model.trajectories}
+
+    this_mc = json.dumps(this_mc)
+
+    s = 'hw2p2' + '_' + now
     filename = f'../results/{s}.pth'
 
-    best_model_config = {'loss': model.val_loss,
-                         'mc': mc,
-                         'run_time': time.time()-start_time,
-                         'trajectories': model.trajectories,
-                         'status': STATUS_OK}
-
-    best_model_config = json.dumps(best_model_config)
-    with open(f'best_model_config_{now}.json', 'w') as bfm:
-        bfm.write(best_model_config)
     torch.save(model.model.state_dict(), filename)
 
+    with open(f'../results/mc_{now}.json', 'w') as bfm:
+        bfm.write(this_mc)
+
     if trials is not None:
-        results = {'loss': model.val_loss,
+        results = {'loss': model.val_c_loss,
+                   'val_c_acc': model.val_c_acc,
+                   'val_v_acc': model.val_v_acc,
                    'mc': mc,
                    'run_time': time.time()-start_time,
                    'trajectories': model.trajectories,

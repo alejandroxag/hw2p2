@@ -11,7 +11,8 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d
 from sklearn.metrics import roc_auc_score
-from .losses import CenterLoss
+from losses import CenterLoss
+# from axa_hw2p2.losses import CenterLoss
 
 # Cell
 class _BottleNeck(nn.Module):
@@ -247,6 +248,8 @@ class MobileNetV2():
 
         self.train_loss = -1
         self.val_c_loss = -1
+        self.val_c_acc = 0
+        self.val_v_acc = 0
         self.trajectories = {'epoch': [],
                              'train_loss': [],
                              'val_c_loss': [],
@@ -258,7 +261,7 @@ class MobileNetV2():
             train_loss = 0
 
             for batch_idx, (img, label) in enumerate(train_loader):
-                print(f'Train. epoch: {epoch}, batch_idx: {batch_idx}')
+                # print(f'Train. epoch: {epoch}, batch_idx: {batch_idx}')
                 img = img.to(self.device)
                 label = label.to(self.device)
 
@@ -295,12 +298,14 @@ class MobileNetV2():
                 display_str = f'epoch: {epoch} '
                 display_str += f'train_loss: {np.round(train_loss,4)} '
                 display_str += f'val_c_loss: {np.round(val_c_loss,4)} '
-                display_str += f'val_c_acc: {np.round(val_c_acc,4):.2%}'
-                display_str += f'val_v_acc: {np.round(val_v_acc,4):.2%}'
+                display_str += f'val_c_acc: {np.round(val_c_acc,4):.2%} '
+                display_str += f'val_v_acc: {np.round(val_v_acc,4):.2%} '
                 print(display_str)
 
                 if self.val_c_loss > val_c_loss: self.val_c_loss = val_c_loss
                 if self.train_loss > train_loss: self.train_loss = train_loss
+                if self.val_c_acc < val_c_acc: self.val_c_acc = val_c_acc
+                if self.val_v_acc < val_v_acc: self.val_v_acc = val_v_acc
 
         print("="*72+"\n")
 
@@ -321,7 +326,7 @@ class MobileNetV2():
 
         with torch.no_grad():
             for batch_idx, (img, label) in enumerate(val_c_loader):
-                print(f'Val class. batch_idx: {batch_idx}')
+                # print(f'Val class. batch_idx: {batch_idx}')
                 img = img.to(self.device)
                 label = label.to(self.device)
 
@@ -345,7 +350,7 @@ class MobileNetV2():
 
         with torch.no_grad():
             for batch_idx, (img_0, img_1, target) in enumerate(val_v_loader):
-                print(f'Val ver. batch_idx: {batch_idx}')
+                # print(f'Val ver. batch_idx: {batch_idx}')
                 img_0 = img_0.to(self.device)
                 img_1 = img_1.to(self.device)
 
