@@ -32,7 +32,7 @@ from models import _BottleNeck, _MobileNetV2, MobileNetV2
 
 # Cell
 def fit_predict(mc, verbose, trials=None):
-
+    print(f'\nCurrent directory: {os.getcwd()}\n')
     now = datetime.now().strftime("%d-%m-%y_%H-%M-%S")
     print(now)
 
@@ -122,11 +122,13 @@ def fit_predict(mc, verbose, trials=None):
     this_mc = json.dumps(this_mc)
 
     s = 'hw2p2' + '_' + now
-    filename = f'../results/{s}.pth'
+    # filename = f'../results/{s}.pth'
+    filename = f'./results/{s}.pth'
 
     torch.save(model.model.state_dict(), filename)
 
-    with open(f'../results/mc_{now}.json', 'w') as bfm:
+    # with open(f'../results/mc_{now}.json', 'w') as bfm:
+    with open(f'./results/mc_{now}.json', 'w') as bfm:
         bfm.write(this_mc)
 
     if trials is not None:
