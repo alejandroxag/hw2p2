@@ -41,55 +41,57 @@ def fit_predict(mc, verbose, trials=None):
     print(pd.Series(mc))
     print('='*26+'\n')
 
-    np.random.seed(1)
-    sample_train = np.array(range(6))
-    sample_val_c = list(range(2))
-    sample_val_c = np.array([sample_train[i] for i in sample_val_c])
-    sample_val_v = np.array(range(2))
+    num_workers = 8 if torch.cuda.is_available() else 0
 
-    train_dataset = FaceClassificationDataset(sample_train, mode='train')
-    val_c_dataset = FaceClassificationDataset(sample_val_c, mode='val')
-    val_v_dataset = FaceVerificationDataset(sample_val_v, mode='val')
+    # np.random.seed(1)
+    # sample_train = np.array(range(6))
+    # sample_val_c = list(range(2))
+    # sample_val_c = np.array([sample_train[i] for i in sample_val_c])
+    # sample_val_v = np.array(range(2))
 
-    # train_dataset = FaceClassificationDataset(mode='train')
-    # val_c_dataset = FaceClassificationDataset(mode='val')
-    # val_v_dataset = FaceVerificationDataset(mode='val')
+    # train_dataset = FaceClassificationDataset(sample_train, mode='train')
+    # val_c_dataset = FaceClassificationDataset(sample_val_c, mode='val')
+    # val_v_dataset = FaceVerificationDataset(sample_val_v, mode='val')
 
-    train_loader = DataLoader(train_dataset,
-                              shuffle=True,
-                              batch_size=mc['batch_size'],
-                              drop_last=True)
-
-    val_c_loader = DataLoader(val_c_dataset,
-                              shuffle=False,
-                              batch_size=1,
-                              drop_last=True)
-
-    val_v_loader = DataLoader(val_v_dataset,
-                              shuffle=False,
-                              batch_size=1,
-                              drop_last=True)
+    train_dataset = FaceClassificationDataset(mode='train')
+    val_c_dataset = FaceClassificationDataset(mode='val')
+    val_v_dataset = FaceVerificationDataset(mode='val')
 
     # train_loader = DataLoader(train_dataset,
     #                           shuffle=True,
     #                           batch_size=mc['batch_size'],
-    #                           num_workers=num_workers,
-    #                           pin_memory=True,
     #                           drop_last=True)
 
     # val_c_loader = DataLoader(val_c_dataset,
     #                           shuffle=False,
-    #                           batch_size=mc['batch_size'],
-    #                           num_workers=num_workers,
-    #                           pin_memory=True,
+    #                           batch_size=1,
     #                           drop_last=True)
 
     # val_v_loader = DataLoader(val_v_dataset,
     #                           shuffle=False,
-    #                           batch_size=mc['batch_size'],
-    #                           num_workers=num_workers,
-    #                           pin_memory=True,
+    #                           batch_size=1,
     #                           drop_last=True)
+
+    train_loader = DataLoader(train_dataset,
+                              shuffle=True,
+                              batch_size=mc['batch_size'],
+                              num_workers=num_workers,
+                              pin_memory=True,
+                              drop_last=True)
+
+    val_c_loader = DataLoader(val_c_dataset,
+                              shuffle=False,
+                              batch_size=mc['batch_size'],
+                              num_workers=num_workers,
+                              pin_memory=True,
+                              drop_last=True)
+
+    val_v_loader = DataLoader(val_v_dataset,
+                              shuffle=False,
+                              batch_size=mc['batch_size'],
+                              num_workers=num_workers,
+                              pin_memory=True,
+                              drop_last=True)
 
     model = MobileNetV2(n_in_ch_bn=mc['n_in_ch_bn'],
                         ls_out_ch_bn=mc['ls_out_ch_bn'],

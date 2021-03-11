@@ -46,8 +46,8 @@ def main():
              'ls_exp_fct_t_bn': hp.choice(label='ls_exp_fct_t_bn',
                                           options=[[1, 6, 6, 6, 6, 6, 6]]),
              'n_embeddings': hp.choice(label='n_embeddings', options=[1280]),
-             'n_classes': hp.choice(label='n_classes', options=[6]),
-             'batch_size': scope.int(hp.choice(label='batch_size', options=[64])),
+             'n_classes': hp.choice(label='n_classes', options=[4000]),
+             'batch_size': scope.int(hp.choice(label='batch_size', options=[1024])),
              'lr': hp.loguniform(label='lr', low=np.log(5e-4), high=np.log(0.03)),
              'lr_decay': hp.choice(label='lr_decay', options=[0.9,0.92,0.94,
                                                               0.96,0.98,1]),
@@ -58,7 +58,6 @@ def main():
              'eval_steps': scope.int(hp.choice(label='eval_steps', options=[4])),}
 
     # Hyperparameters search
-    num_workers = 8 if torch.cuda.is_available() else 0
     trials = Trials()
     fmin_objective = partial(fit_predict, trials=trials, verbose=True)
     fmin(fmin_objective, space=space,
