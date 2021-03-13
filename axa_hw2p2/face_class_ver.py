@@ -69,7 +69,7 @@ def main():
                                           options=[[1, 6, 6, 6, 6, 6, 6]]),
              'n_embeddings': hp.choice(label='n_embeddings', options=[1280]),
              'n_classes': hp.choice(label='n_classes', options=[4000]),
-             'batch_size': scope.int(hp.choice(label='batch_size', options=[1024])),
+             'batch_size': scope.int(hp.choice(label='batch_size', options=[512])),
              'lr': hp.loguniform(label='lr', low=np.log(5e-4), high=np.log(0.03)),
              'lr_decay': hp.choice(label='lr_decay', options=[0.9,0.92,0.94,
                                                               0.96,0.98,1]),
