@@ -238,7 +238,7 @@ class MobileNetV2():
 
         optimizer = Adam(self.model.parameters(),
                          lr=self.lr,
-                         weight_decay=0.0005)
+                         weight_decay=0.00004)
         optimizer_centerloss = Adam(center_loss_f.parameters(),
                                     lr=self.lr_cl)
 
