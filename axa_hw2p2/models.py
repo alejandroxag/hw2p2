@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
-from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d
+from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d, softmax
 from sklearn.metrics import roc_auc_score
 from losses import CenterLoss
 # from axa_hw2p2.losses import CenterLoss
@@ -367,7 +367,7 @@ class MobileNetV2():
                 val_c_loss += loss.item()
 
                 # predicted = torch.argmax(cl_output.data, 1)
-                predicted = torch.max(F.softmax(cl_output, dim=1), 1).view(-1)
+                predicted = torch.max(softmax(cl_output, dim=1), 1).view(-1)
                 total_predictions += len(label)
                 # correct_predictions += (predicted == label).sum().item()
                 correct_predictions += torch.sum(torch.eq(predicted, label)).item()
