@@ -366,8 +366,7 @@ class MobileNetV2():
                 val_c_loss += loss.item()
 
                 # predicted = torch.argmax(cl_output.data, 1)
-                predicted = torch.max(softmax(cl_output, dim=1), 1)
-                print(predicted.shape)
+                _, predicted = torch.max(softmax(cl_output, dim=1), 1)
                 predicted = predicted.view(-1)
                 total_predictions += len(label)
                 # correct_predictions += (predicted == label).sum().item()
