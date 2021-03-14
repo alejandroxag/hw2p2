@@ -206,7 +206,7 @@ class MobileNetV2():
         self.ls_exp_fct_t_bn = ls_exp_fct_t_bn
         self.n_embeddings = n_embeddings
         self.n_classes = n_classes
-        self.center_loss == center_loss
+        self.center_loss = center_loss
 
         # Optimization parameters
         self.lr = lr
