@@ -352,6 +352,9 @@ class MobileNetV2():
                     loss = self.alpha_cl * center_loss_f(embeddings, label) + \
                        cross_entroypy_loss_f(cl_output, label)
 
+                else:
+                    loss = cross_entroypy_loss_f(cl_output, label)
+
                 loss = loss.detach()
                 val_c_loss += loss.item()
 
