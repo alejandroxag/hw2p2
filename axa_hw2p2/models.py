@@ -192,7 +192,7 @@ class MobileNetV2():
                  lr: float,
                  lr_decay: float,
                  n_lr_decay_steps: int,
-                 center_loss=True,
+                 center_loss: bool,
                  lr_cl: float,
                  alpha_cl: float,
                  n_epochs: int,
