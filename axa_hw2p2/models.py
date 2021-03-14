@@ -296,7 +296,6 @@ class MobileNetV2():
                     for p in center_loss_f.parameters():
                         p.grad.data *= (1./self.alpha_cl)
 
-
                 optimizer.step()
 
                 if self.center_loss == True:
@@ -367,7 +366,8 @@ class MobileNetV2():
                 val_c_loss += loss.item()
 
                 # predicted = torch.argmax(cl_output.data, 1)
-                predicted = torch.max(softmax(cl_output, dim=1), 1).view(-1)
+                predicted = torch.max(softmax(cl_output, dim=1), 1)
+                predicted = predicted.view(-1)
                 total_predictions += len(label)
                 # correct_predictions += (predicted == label).sum().item()
                 correct_predictions += torch.sum(torch.eq(predicted, label)).item()
