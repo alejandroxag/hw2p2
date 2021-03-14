@@ -11,7 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision
 from PIL import Image
 from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 from sklearn.metrics import roc_auc_score
 import pandas as pd

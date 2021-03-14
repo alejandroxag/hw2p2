@@ -7,7 +7,7 @@ __all__ = ['MobileNetV2']
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d
 from sklearn.metrics import roc_auc_score
@@ -238,12 +238,20 @@ class MobileNetV2():
                                    feat_dim=self.n_embeddings,
                                    use_gpu=torch.cuda.is_available())
 
-        optimizer = Adam(self.model.parameters(),
-                         lr=self.lr,
-                         weight_decay=0.00004)
+        # optimizer = Adam(self.model.parameters(),
+        #                  lr=self.lr,
+        #                  weight_decay=0.00004)
 
-        optimizer_centerloss = Adam(center_loss_f.parameters(),
-                                    lr=self.lr_cl)
+        # optimizer_centerloss = Adam(center_loss_f.parameters(),
+        #                             lr=self.lr_cl)
+
+        optimizer = SGD(self.model.parameters(),
+                        lr=self.lr,
+                        weight_decay=0.00004,
+                        momentum=0.9)
+
+        optimizer_centerloss = SGD(center_loss_f.parameters(),
+                                   lr=self.lr_cl)
 
         scheduler = StepLR(optimizer=optimizer,
                            step_size=self.n_epochs//self.n_lr_decay_steps,
@@ -358,9 +366,11 @@ class MobileNetV2():
                 loss = loss.detach()
                 val_c_loss += loss.item()
 
-                predicted = torch.argmax(cl_output.data, 1)
-                total_predictions += img.size(0)
-                correct_predictions += (predicted == label).sum().item()
+                # predicted = torch.argmax(cl_output.data, 1)
+                predicted = torch.max(F.softmax(cl_output, dim=1), 1).view(-1)
+                total_predictions += len(label)
+                # correct_predictions += (predicted == label).sum().item()
+                correct_predictions += torch.sum(torch.eq(predicted, label)).item()
 
         val_c_loss /= len(val_c_loader)
         val_c_acc = correct_predictions/total_predictions

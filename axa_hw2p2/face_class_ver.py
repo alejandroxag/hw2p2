@@ -11,7 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision
 from PIL import Image
 from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 from sklearn.metrics import roc_auc_score
 import pandas as pd
@@ -72,11 +72,11 @@ def main():
              'n_classes': hp.choice(label='n_classes', options=[4000]),
              'batch_size': scope.int(hp.choice(label='batch_size', options=[512])),
              'lr': hp.loguniform(label='lr', low=np.log(5e-4), high=np.log(0.1)),
-             'lr_decay': hp.choice(label='lr_decay', options=[0.98,0.99,1]),
+             'lr_decay': hp.choice(label='lr_decay', options=[1]),
              'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[1,2,4]),
              'center_loss': hp.choice(label='center_loss', options=[True,False]),
              'lr_cl': hp.choice(label='lr_cl', options=[0.5]),
-             'alpha_cl': hp.choice(label='alpha_cl', options=[0.01,0.1]),
+             'alpha_cl': hp.choice(label='alpha_cl', options=[0.01,0.1,1]),
              'n_epochs': hp.choice(label='n_epochs', options=[25]),
              'eval_steps': scope.int(hp.choice(label='eval_steps', options=[4])),}
 
