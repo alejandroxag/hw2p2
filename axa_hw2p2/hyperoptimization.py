@@ -56,7 +56,7 @@ def fit_predict(mc, verbose, trials=None):
     # train_dataset = FaceClassificationDataset(mode='train')
     # val_c_dataset = FaceClassificationDataset(mode='val')
     # val_v_dataset = FaceVerificationDataset(mode='val')
-    print(len(np.unique(train_dataset.labels)))
+
     # train_loader = DataLoader(train_dataset,
     #                           shuffle=True,
     #                           batch_size=mc['batch_size'],
