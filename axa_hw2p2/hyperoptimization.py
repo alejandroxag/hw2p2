@@ -44,10 +44,10 @@ def fit_predict(mc, verbose, trials=None):
     num_workers = 8 if torch.cuda.is_available() else 0
 
     np.random.seed(1)
-    sample_train = np.array(range(100))
-    sample_val_c = list(range(2))
+    sample_train = np.array(range(250))
+    sample_val_c = list(range(250))
     sample_val_c = np.array([sample_train[i] for i in sample_val_c])
-    sample_val_v = np.array(range(2))
+    sample_val_v = np.array(range(100))
 
     train_dataset = FaceClassificationDataset(sample_train, mode='train')
     val_c_dataset = FaceClassificationDataset(sample_val_c, mode='val')
