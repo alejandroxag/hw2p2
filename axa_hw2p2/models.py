@@ -192,6 +192,7 @@ class MobileNetV2():
                  lr: float,
                  lr_decay: float,
                  n_lr_decay_steps: int,
+                 center_loss=True,
                  lr_cl: float,
                  alpha_cl: float,
                  n_epochs: int,
@@ -205,6 +206,7 @@ class MobileNetV2():
         self.ls_exp_fct_t_bn = ls_exp_fct_t_bn
         self.n_embeddings = n_embeddings
         self.n_classes = n_classes
+        self.center_loss == center_loss
 
         # Optimization parameters
         self.lr = lr
@@ -239,6 +241,7 @@ class MobileNetV2():
         optimizer = Adam(self.model.parameters(),
                          lr=self.lr,
                          weight_decay=0.00004)
+
         optimizer_centerloss = Adam(center_loss_f.parameters(),
                                     lr=self.lr_cl)
 
@@ -267,17 +270,30 @@ class MobileNetV2():
 
                 embeddings, cl_output = self.model(img)
 
-                loss = self.alpha_cl * center_loss_f(embeddings, label) + \
+                if self.center_loss == True:
+                    loss = self.alpha_cl * center_loss_f(embeddings, label) + \
                        cross_entroypy_loss_f(cl_output, label)
 
+                else:
+                    loss = cross_entroypy_loss_f(cl_output, label)
+
                 optimizer.zero_grad()
-                optimizer_centerloss.zero_grad()
+
+                if self.center_loss == True:
+                    optimizer_centerloss.zero_grad()
+
                 loss.backward()
-                for p in center_loss_f.parameters():
-                    p.grad.data *= (1./self.alpha_cl)
+
+                if self.center_loss == True:
+                    for p in center_loss_f.parameters():
+                        p.grad.data *= (1./self.alpha_cl)
+
 
                 optimizer.step()
-                optimizer_centerloss.step()
+
+                if self.center_loss == True:
+                    optimizer_centerloss.step()
+
                 scheduler.step()
 
                 train_loss += loss.item()
@@ -332,13 +348,14 @@ class MobileNetV2():
 
                 embeddings, cl_output = self.model(img)
 
-                loss = self.alpha_cl * center_loss_f(embeddings, label) + \
+                if self.center_loss == True:
+                    loss = self.alpha_cl * center_loss_f(embeddings, label) + \
                        cross_entroypy_loss_f(cl_output, label)
 
                 loss = loss.detach()
                 val_c_loss += loss.item()
 
-                predicted = torch.argmax(cl_output, 1)
+                predicted = torch.argmax(cl_output.data, 1)
                 total_predictions += img.size(0)
                 correct_predictions += (predicted == label).sum().item()
 

@@ -53,6 +53,7 @@ def main():
     #          'lr_decay': hp.choice(label='lr_decay', options=[0.9,0.92,0.94,
     #                                                           0.96,0.98,1]),
     #          'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[1,2,4]),
+    #          'center_loss': hp.choice(label='center_loss', options=[True,False]),
     #          'lr_cl': hp.choice(label='lr_cl', options=[0.4,0.5,0.6]),
     #          'alpha_cl': hp.choice(label='alpha_cl', options=[0.001,0.01,0.1]),
     #          'n_epochs': hp.choice(label='n_epochs', options=[16]),
@@ -73,9 +74,10 @@ def main():
              'lr': hp.loguniform(label='lr', low=np.log(5e-4), high=np.log(0.03)),
              'lr_decay': hp.choice(label='lr_decay', options=[0.96,0.97,0.98,0.99,1]),
              'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[1,2,4]),
+             'center_loss': hp.choice(label='center_loss', options=[True,False]),
              'lr_cl': hp.choice(label='lr_cl', options=[0.4,0.5,0.6]),
              'alpha_cl': hp.choice(label='alpha_cl', options=[0.001,0.01,0.1]),
-             'n_epochs': hp.choice(label='n_epochs', options=[100]),
+             'n_epochs': hp.choice(label='n_epochs', options=[25]),
              'eval_steps': scope.int(hp.choice(label='eval_steps', options=[4])),}
 
     # Hyperparameters search

@@ -103,6 +103,7 @@ def fit_predict(mc, verbose, trials=None):
                         lr=mc['lr'],
                         lr_decay=mc['lr_decay'],
                         n_lr_decay_steps=mc['n_lr_decay_steps'],
+                        center_loss=mc['center_loss'],
                         lr_cl=mc['lr_cl'],
                         alpha_cl=mc['alpha_cl'],
                         n_epochs=mc['n_epochs'],
