@@ -55,10 +55,6 @@ def fit_predict(mc, verbose, trials=None, sample_size=None):
         val_c_dataset = FaceClassificationDataset(sample, mode='val')
         val_v_dataset = FaceVerificationDataset(sample, mode='val')
 
-    print(len(train_dataset))
-    print(len(val_c_dataset))
-    print(len(val_v_dataset))
-
     train_loader = DataLoader(train_dataset,
                               shuffle=True,
                               batch_size=mc['batch_size'],
@@ -77,10 +73,6 @@ def fit_predict(mc, verbose, trials=None, sample_size=None):
                               num_workers=num_workers,
                               pin_memory=torch.cuda.is_available(),
                               drop_last=True)
-
-    print(len(train_loader))
-    print(len(val_c_loader))
-    print(len(val_v_loader))
 
     model = MobileNetV2(n_in_ch_bn=mc['n_in_ch_bn'],
                         ls_out_ch_bn=mc['ls_out_ch_bn'],
