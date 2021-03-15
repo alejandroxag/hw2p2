@@ -14,8 +14,8 @@ from torch.optim.lr_scheduler import StepLR
 from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d, softmax
 from sklearn.metrics import roc_auc_score
 from functools import partial
-# from losses import CenterLoss
-from ..losses import CenterLoss
+from losses import CenterLoss
+# from axa_hw2p2.losses import CenterLoss
 
 # Cell
 class Conv2dAuto(nn.Conv2d):
@@ -29,8 +29,6 @@ conv3x3 = partial(Conv2dAuto, kernel_size=3, bias=False)
 # Cell
 conv3x3 = partial(Conv2dAuto, kernel_size=3, bias=False)
 conv = conv3x3(in_channels=32, out_channels=64)
-print(conv)
-del conv
 
 
 # Cell
