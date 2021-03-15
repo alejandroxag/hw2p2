@@ -72,5 +72,4 @@ def main(batch_size, sample_size=None):
 
 # Cell
 if __name__ == "__main__":
-    # os.chdir('nbs')
     main(batch_size=64, sample_size=1000)

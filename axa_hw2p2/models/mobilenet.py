@@ -259,6 +259,7 @@ class MobileNetV2():
 
         self.train_loss = -1
         self.val_c_loss = -1
+        self.train_c_acc = 0
         self.val_c_acc = 0
         self.val_v_acc = 0
         self.trajectories = {'epoch': [],
@@ -270,9 +271,10 @@ class MobileNetV2():
         for epoch in range(self.n_epochs):
 
             train_loss = 0
+            train_correct_predictions = 0
+            train_total_predictions = 0
 
             for batch_idx, (img, label) in enumerate(train_loader):
-                # print(f'Train. epoch: {epoch}, batch_idx: {batch_idx}')
                 img = img.to(self.device)
                 label = label.to(self.device)
 
@@ -284,6 +286,10 @@ class MobileNetV2():
 
                 else:
                     loss = cross_entroypy_loss_f(cl_output, label)
+
+                predicted = torch.argmax(cl_output.data, 1)
+                train_correct_predictions += (predicted == label).sum().item()
+                train_total_predictions += len(label)
 
                 optimizer.zero_grad()
 
@@ -306,6 +312,7 @@ class MobileNetV2():
                 train_loss += loss.item()
 
             train_loss /= len(train_loader)
+            train_c_acc = train_correct_predictions/train_total_predictions
 
             if epoch % self.eval_steps == 0:
                 val_c_loss, val_c_acc, val_v_acc = \
@@ -314,12 +321,14 @@ class MobileNetV2():
 
                 self.trajectories['epoch'].append(epoch)
                 self.trajectories['train_loss'].append(train_loss)
+                self.trajectories['train_c_acc'].append(train_c_acc)
                 self.trajectories['val_c_loss'].append(val_c_loss)
                 self.trajectories['val_c_acc'].append(val_c_acc)
                 self.trajectories['val_v_acc'].append(val_v_acc)
 
                 display_str = f'epoch: {epoch} '
                 display_str += f'train_loss: {np.round(train_loss,4)} '
+                display_str += f'train_c_acc: {np.round(train_c_acc,4):.2%} '
                 display_str += f'val_c_loss: {np.round(val_c_loss,4)} '
                 display_str += f'val_c_acc: {np.round(val_c_acc,4):.2%} '
                 display_str += f'val_v_acc: {np.round(val_v_acc,4):.2%} '
@@ -327,6 +336,7 @@ class MobileNetV2():
 
                 if self.val_c_loss > val_c_loss: self.val_c_loss = val_c_loss
                 if self.train_loss > train_loss: self.train_loss = train_loss
+                if self.train_c_acc < train_c_acc: self.train_c_acc = train_c_acc
                 if self.val_c_acc < val_c_acc: self.val_c_acc = val_c_acc
                 if self.val_v_acc < val_v_acc: self.val_v_acc = val_v_acc
 
@@ -349,7 +359,6 @@ class MobileNetV2():
 
         with torch.no_grad():
             for batch_idx, (img, label) in enumerate(val_c_loader):
-                # print(f'Val class. batch_idx: {batch_idx}')
                 img = img.to(self.device)
                 label = label.to(self.device)
 
@@ -365,12 +374,9 @@ class MobileNetV2():
                 loss = loss.detach()
                 val_c_loss += loss.item()
 
-                # predicted = torch.argmax(cl_output.data, 1)
-                _, predicted = torch.max(softmax(cl_output, dim=1), 1)
-                predicted = predicted.view(-1)
+                predicted = torch.argmax(cl_output.data, 1)
                 total_predictions += len(label)
-                # correct_predictions += (predicted == label).sum().item()
-                correct_predictions += torch.sum(torch.eq(predicted, label)).item()
+                correct_predictions += (predicted == label).sum().item()
 
         val_c_loss /= len(val_c_loader)
         val_c_acc = correct_predictions/total_predictions
@@ -380,7 +386,6 @@ class MobileNetV2():
 
         with torch.no_grad():
             for batch_idx, (img_0, img_1, target) in enumerate(val_v_loader):
-                # print(f'Val ver. batch_idx: {batch_idx}')
                 img_0 = img_0.to(self.device)
                 img_1 = img_1.to(self.device)
 

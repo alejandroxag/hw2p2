@@ -104,12 +104,10 @@ def fit_predict(mc, verbose, trials=None, sample_size=None):
     this_mc = json.dumps(this_mc)
 
     s = 'hw2p2' + '_' + now
-    # filename = f'../results/{s}.pth'
     filename = f'./results/{s}.pth'
 
     torch.save(model.model.state_dict(), filename)
 
-    # with open(f'../results/mc_{now}.json', 'w') as bfm:
     with open(f'./results/mc_{now}.json', 'w') as bfm:
         bfm.write(this_mc)
 
