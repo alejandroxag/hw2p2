@@ -43,10 +43,10 @@ def main(model, batch_size, sample_size=None, max_evals=20):
             #  'n_classes': hp.choice(label='n_classes', options=[4000]),
              'batch_size': scope.int(hp.choice(label='batch_size', options=[batch_size])),
              'lr': hp.loguniform(label='lr', low=np.log(5e-2), high=np.log(2e-1)),
-             'lr_decay': hp.choice(label='lr_decay', options=[0.98,0.99,1]),
+             'lr_decay': hp.choice(label='lr_decay', options=[0.96,0.97,0.98,0.99,1]),
              'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[1,2,4]),
              'center_loss': hp.choice(label='center_loss', options=[True]),
-             'lr_cl': hp.choice(label='lr_cl', options=[0.5]),
+             'lr_cl': hp.choice(label='lr_cl', options=[0.4,0.5,0.6]),
              'alpha_cl': hp.choice(label='alpha_cl', options=[0.01,0.1,1]),
              'n_epochs': hp.choice(label='n_epochs', options=[25]),
              'eval_steps': scope.int(hp.choice(label='eval_steps', options=[4])),}
@@ -64,4 +64,4 @@ def main(model, batch_size, sample_size=None, max_evals=20):
 
 # Cell
 if __name__ == "__main__":
-    main(model='resnet34', batch_size=64, sample_size=100, max_evals=20)
+    main(model='resnet50', batch_size=256, sample_size=500, max_evals=20)
