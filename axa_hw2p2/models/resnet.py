@@ -549,7 +549,7 @@ class ResNetN():
 
         try:
             val_v_acc = roc_auc_score(ver_bool, similarity)
-        except:
+        except TypeError:
             print(similarity)
             print(ver_bool)
             val_v_acc = None
