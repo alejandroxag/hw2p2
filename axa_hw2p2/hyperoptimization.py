@@ -52,7 +52,7 @@ def fit_predict(mc, verbose, trials=None):
     train_dataset = FaceClassificationDataset(sample_train, mode='train')
     val_c_dataset = FaceClassificationDataset(sample_val_c, mode='val')
     val_v_dataset = FaceVerificationDataset(sample_val_v, mode='val')
-
+    prnt(len(val_c_dataset))
     # train_dataset = FaceClassificationDataset(mode='train')
     # val_c_dataset = FaceClassificationDataset(mode='val')
     # val_v_dataset = FaceVerificationDataset(mode='val')
