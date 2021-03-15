@@ -35,7 +35,7 @@ from hyperoptimization import fit_predict
 # from axa_hw2p2.hyperoptimization import fit_predict
 
 # Cell
-def main(model, batch_size, sample_size=None):
+def main(model, batch_size, sample_size=None, max_evals=20):
 
     # Hyperparameters space
     space = {'model': hp.choice(label='model', options=[model]),
@@ -60,8 +60,8 @@ def main(model, batch_size, sample_size=None):
     trials = Trials()
     fmin_objective = partial(fit_predict, verbose=True, trials=trials, sample_size=sample_size)
     fmin(fmin_objective, space=space,
-         algo=tpe.suggest, max_evals=20, trials=trials)
+         algo=tpe.suggest, max_evals=max_evals, trials=trials)
 
 # Cell
 if __name__ == "__main__":
-    main(model='resnet18', batch_size=512, sample_size=None)
+    main(model='resnet34', batch_size=64, sample_size=100, max_evals=20)
