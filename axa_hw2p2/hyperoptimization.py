@@ -47,12 +47,13 @@ def fit_predict(mc, verbose, trials=None):
     sample_train = np.array(range(100))
     sample_val_c = list(range(10))
     sample_val_c = np.array([sample_train[i] for i in sample_val_c])
+    print(sample_val_c)
     sample_val_v = np.array(range(5))
 
     train_dataset = FaceClassificationDataset(sample_train, mode='train')
     val_c_dataset = FaceClassificationDataset(sample_val_c, mode='val')
     val_v_dataset = FaceVerificationDataset(sample_val_v, mode='val')
-    print(len(val_c_dataset))
+
     # train_dataset = FaceClassificationDataset(mode='train')
     # val_c_dataset = FaceClassificationDataset(mode='val')
     # val_v_dataset = FaceVerificationDataset(mode='val')
