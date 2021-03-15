@@ -64,4 +64,4 @@ def main(model, batch_size, sample_size=None, max_evals=20):
 
 # Cell
 if __name__ == "__main__":
-    main(model='resnet50', batch_size=64, sample_size=100, max_evals=20)
+    main(model='resnet18', batch_size=64, sample_size=100, max_evals=20)
