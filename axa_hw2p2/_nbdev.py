@@ -7,14 +7,15 @@ index = {"CenterLoss": "center_loss.ipynb",
          "FaceVerificationDataset": "datasets.ipynb",
          "main": "face_class_ver.ipynb",
          "fit_predict": "hyper_p_opt.ipynb",
-         "MobileNetV2": "models.ipynb"}
+         "MobileNetV2": "models_resnet.ipynb"}
 
 modules = ["losses.py",
            "datasets.py",
            "face_class_ver.py",
            "hyperoptimization.py",
            "kaggle_data_setup.py",
-           "models.py"]
+           "models/mobilenet.py",
+           "models/resnet.py"]
 
 doc_url = "https://alejandroxag.github.io/axa_hw2p2/"
 

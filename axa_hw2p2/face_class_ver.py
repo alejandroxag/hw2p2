@@ -25,7 +25,8 @@ import time
 
 from datasets import FaceClassificationDataset, FaceVerificationDataset
 from losses import CenterLoss
-from models import _BottleNeck, _MobileNetV2, MobileNetV2
+from models.mobilenet import _BottleNeck, _MobileNetV2, MobileNetV2
+# from models.resnet import
 from hyperoptimization import fit_predict
 # from axa_hw2p2.datasets import FaceClassificationDataset, FaceVerificationDataset
 # from axa_hw2p2.losses import CenterLoss
@@ -33,7 +34,7 @@ from hyperoptimization import fit_predict
 # from axa_hw2p2.hyperoptimization import fit_predict
 
 # Cell
-def main():
+def main(sample_size=None):
 
     # Hyperparameters space
 
@@ -81,11 +82,11 @@ def main():
 
     # Hyperparameters search
     trials = Trials()
-    fmin_objective = partial(fit_predict, trials=trials, verbose=True)
+    fmin_objective = partial(fit_predict, verbose=True, trials=trials, sample_size=sample_size)
     fmin(fmin_objective, space=space,
          algo=tpe.suggest, max_evals=20, trials=trials)
 
 # Cell
 if __name__ == "__main__":
     # os.chdir('nbs')
-    main()
+    main(sample_size=100)

@@ -25,13 +25,14 @@ import time
 
 from datasets import FaceClassificationDataset, FaceVerificationDataset
 from losses import CenterLoss
-from models import _BottleNeck, _MobileNetV2, MobileNetV2
+from models.mobilenet import _BottleNeck, _MobileNetV2, MobileNetV2
+# from models.resnet import
 # from axa_hw2p2.datasets import FaceClassificationDataset, FaceVerificationDataset
 # from axa_hw2p2.losses import CenterLoss
 # from axa_hw2p2.models import _BottleNeck, _MobileNetV2, MobileNetV2
 
 # Cell
-def fit_predict(mc, verbose, trials=None):
+def fit_predict(mc, verbose, trials=None, sample_size=None):
     print(f'\nCurrent directory: {os.getcwd()}\n')
     now = datetime.now().strftime("%d-%m-%y_%H-%M-%S")
     print(now)
@@ -43,54 +44,34 @@ def fit_predict(mc, verbose, trials=None):
 
     num_workers = 8 if torch.cuda.is_available() else 0
 
-    # np.random.seed(1)
-    # sample_train = np.array(range(100))
-    # sample_val_c = list(range(25))
-    # sample_val_c = np.array([sample_train[i] for i in sample_val_c])
-    # sample_val_v = np.array(range(25))
-
-    # train_dataset = FaceClassificationDataset(sample_train, mode='train')
-    # val_c_dataset = FaceClassificationDataset(sample_val_c, mode='val')
-    # val_v_dataset = FaceVerificationDataset(sample_val_v, mode='val')
-
-    train_dataset = FaceClassificationDataset(mode='train')
-    val_c_dataset = FaceClassificationDataset(mode='val')
-    val_v_dataset = FaceVerificationDataset(mode='val')
-
-    # train_loader = DataLoader(train_dataset,
-    #                           shuffle=True,
-    #                           batch_size=mc['batch_size'],
-    #                           drop_last=True)
-
-    # val_c_loader = DataLoader(val_c_dataset,
-    #                           shuffle=False,
-    #                           batch_size=1,
-    #                           drop_last=True)
-
-    # val_v_loader = DataLoader(val_v_dataset,
-    #                           shuffle=False,
-    #                           batch_size=1,
-    #                           drop_last=True)
+    if sample_size == None:
+        train_dataset = FaceClassificationDataset(mode='train')
+        val_c_dataset = FaceClassificationDataset(mode='val')
+        val_v_dataset = FaceVerificationDataset(mode='val')
+    else:
+        assert mc['batch_size'] < 2*sample_size
+        sample = np.array(range(sample_size))
+        train_dataset = FaceClassificationDataset(sample, mode='train')
+        val_c_dataset = FaceClassificationDataset(sample, mode='val')
+        val_v_dataset = FaceVerificationDataset(sample, mode='val')
 
     train_loader = DataLoader(train_dataset,
                               shuffle=True,
                               batch_size=mc['batch_size'],
                               num_workers=num_workers,
-                              pin_memory=True,
+                              pin_memory=torch.cuda.is_available(),
                               drop_last=True)
-
     val_c_loader = DataLoader(val_c_dataset,
                               shuffle=False,
                               batch_size=mc['batch_size'],
                               num_workers=num_workers,
-                              pin_memory=True,
+                              pin_memory=torch.cuda.is_available(),
                               drop_last=True)
-
     val_v_loader = DataLoader(val_v_dataset,
                               shuffle=False,
                               batch_size=mc['batch_size'],
                               num_workers=num_workers,
-                              pin_memory=True,
+                              pin_memory=torch.cuda.is_available(),
                               drop_last=True)
 
     model = MobileNetV2(n_in_ch_bn=mc['n_in_ch_bn'],
