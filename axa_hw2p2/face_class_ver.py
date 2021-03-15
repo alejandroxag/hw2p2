@@ -48,7 +48,7 @@ def main():
                                           options=[[1, 6, 6, 6, 6, 6, 6]]),
              'n_embeddings': hp.choice(label='n_embeddings', options=[1280]),
              'n_classes': hp.choice(label='n_classes', options=[100]),
-             'batch_size': scope.int(hp.choice(label='batch_size', options=[64])),
+             'batch_size': scope.int(hp.choice(label='batch_size', options=[16])),
              'lr': hp.loguniform(label='lr', low=np.log(5e-2), high=np.log(2e-1)),
              'lr_decay': hp.choice(label='lr_decay', options=[0.98,0.99,1]),
              'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[1,2,4]),
