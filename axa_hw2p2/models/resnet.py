@@ -541,15 +541,6 @@ class ResNetN():
                 emb_0 = self.model(img_0)[0]
                 emb_1 = self.model(img_1)[0]
 
-                # if torch.sum(emb_0) == 0 or torch.sum(emb_1) == 0:
-                #     print('Null embeddings vector')
-                #     print(torch.sum(emb_0))
-                #     print(torch.sum(emb_1))
-                #     sim_score = torch.cdist(emb_0, emb_1, p=2.0)
-                # else:
-                #     sim_score = cosine_similarity(emb_0, emb_1)
-
-
                 sim_score = cosine_similarity(emb_0, emb_1)
                 similarity = np.append(similarity, sim_score.cpu().numpy().reshape(-1))
                 ver_bool = np.append(ver_bool, target)
