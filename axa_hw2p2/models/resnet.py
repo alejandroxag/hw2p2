@@ -2,7 +2,7 @@
 
 __all__ = ['Conv2dAuto', 'conv3x3', 'conv3x3', 'conv', 'ResidualBlock', 'ResNetResidualBlock', 'conv_bn',
            'ResNetBasicBlock', 'ResNetBottleNeckBlock', 'ResNetLayer', 'ResNetEncoder', 'ResnetDecoder', 'resnet18',
-           'resnet34', 'resnet50', 'MobileNetV2']
+           'resnet34', 'resnet50', 'ResNetN']
 
 # Cell
 #imports
@@ -265,9 +265,9 @@ class ResnetDecoder(nn.Module):
 
     def forward(self, x):
         x = self.avg(x)
-        x = x.view(x.size(0), -1)
-        x = self.decoder(x)
-        return x
+        embeddings = x.view(x.size(0), -1)
+        x = self.decoder(embeddings)
+        return embeddings, x
 
 # Cell
 class _ResNet(nn.Module):
@@ -288,8 +288,8 @@ class _ResNet(nn.Module):
 
     def forward(self, x):
         x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+        embeddings, x = self.decoder(x)
+        return embeddings, x
 
 # Cell
 def resnet18(in_channels: int,
@@ -334,16 +334,12 @@ def resnet50(in_channels: int,
                    **kwargs)
 
 # Cell
-class MobileNetV2():
+class ResNetN():
     """
     """
     def __init__(self,
-                 n_in_ch_bn: int,
-                 ls_out_ch_bn: list,
-                 ls_n_rep_bn: list,
-                 ls_stride_bn: list,
-                 ls_exp_fct_t_bn: list,
-                 n_embeddings: int,
+                 res_net_deepth,
+                 in_channels: int,
                  n_classes: int,
                  lr: float,
                  lr_decay: float,
@@ -354,15 +350,14 @@ class MobileNetV2():
                  n_epochs: int,
                  eval_steps: int):
 
+        assert res_net_deepth in [18, 34, 50]
+
         # Architecture parameters
-        self.n_in_ch_bn = n_in_ch_bn
-        self.ls_out_ch_bn = ls_out_ch_bn
-        self.ls_n_rep_bn = ls_n_rep_bn
-        self.ls_stride_bn = ls_stride_bn
-        self.ls_exp_fct_t_bn = ls_exp_fct_t_bn
-        self.n_embeddings = n_embeddings
+        self.in_channels = in_channels
         self.n_classes = n_classes
         self.center_loss = center_loss
+        if res_net_deepth == 50: self.n_embeddings = 2048
+        else: self.n_embeddings = 512
 
         # Optimization parameters
         self.lr = lr
@@ -373,13 +368,12 @@ class MobileNetV2():
         self.n_epochs = n_epochs
         self.eval_steps = eval_steps
 
-        self.model = _MobileNetV2(n_in_ch_bn=n_in_ch_bn,
-                                  ls_out_ch_bn=ls_out_ch_bn,
-                                  ls_n_rep_bn=ls_n_rep_bn,
-                                  ls_stride_bn=ls_stride_bn,
-                                  ls_exp_fct_t_bn=ls_exp_fct_t_bn,
-                                  n_embeddings=n_embeddings,
-                                  n_classes=n_classes)
+        if res_net_deepth == 18: self.model = resnet18
+        if res_net_deepth == 34: self.model = resnet34
+        if res_net_deepth == 50: self.model = resnet50
+
+        self.model = self.model(in_channels=in_channels,
+                                n_classes=n_classes)
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

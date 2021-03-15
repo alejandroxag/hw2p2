@@ -7,7 +7,7 @@ index = {"CenterLoss": "center_loss.ipynb",
          "FaceVerificationDataset": "datasets.ipynb",
          "main": "face_class_ver.ipynb",
          "fit_predict": "hyper_p_opt.ipynb",
-         "MobileNetV2": "models_resnet.ipynb",
+         "MobileNetV2": "models_mobilenet.ipynb",
          "Conv2dAuto": "models_resnet.ipynb",
          "conv3x3": "models_resnet.ipynb",
          "conv": "models_resnet.ipynb",
@@ -21,7 +21,8 @@ index = {"CenterLoss": "center_loss.ipynb",
          "ResnetDecoder": "models_resnet.ipynb",
          "resnet18": "models_resnet.ipynb",
          "resnet34": "models_resnet.ipynb",
-         "resnet50": "models_resnet.ipynb"}
+         "resnet50": "models_resnet.ipynb",
+         "ResNetN": "models_resnet.ipynb"}
 
 modules = ["losses.py",
            "datasets.py",
