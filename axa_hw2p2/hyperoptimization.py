@@ -74,6 +74,10 @@ def fit_predict(mc, verbose, trials=None, sample_size=None):
                               pin_memory=torch.cuda.is_available(),
                               drop_last=True)
 
+    print(len(train_loader))
+    print(len(val_c_loader))
+    print(len(val_v_loader))
+
     model = MobileNetV2(n_in_ch_bn=mc['n_in_ch_bn'],
                         ls_out_ch_bn=mc['ls_out_ch_bn'],
                         ls_n_rep_bn=mc['ls_n_rep_bn'],
