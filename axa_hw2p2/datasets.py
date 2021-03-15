@@ -30,21 +30,16 @@ class FaceClassificationDataset(Dataset):
 
         # Directory setup
         if mode == 'train':
-            # self.data_dir = '../nbs/data/s1/train_data'
             self.data_dir = './data/s1/train_data'
         elif mode == 'val':
-            # self.data_dir = '../nbs/data/s1/val_data'
             self.data_dir = './data/s1/val_data'
         else:
-            # self.data_dir = '../nbs/data/s1/test_data'
             self.data_dir = './data/s1/test_data'
 
         # Labels
         if (mode == 'train' or mode == 'val'):
             if sample is not None:
                 sample = np.array(sample)
-                # assert files.sum() + len(files) == \
-                #     len(files)*(len(files) + 1)//2
                 assert sample.min() >= 0
                 self.labels = np.array(sample)
                 self.labels.sort(axis=0)
@@ -99,18 +94,13 @@ class FaceVerificationDataset(Dataset):
             assert isinstance(sample, (list, np.ndarray))
 
         self.mode = mode
-        # self.data_dir = '../nbs/data/s2/'
         self.data_dir = './data/s2/'
 
         # Directory setup
         if mode == 'val':
-            # self.pairs_file = \
-            #     '../nbs/data/s2/verification_pairs_val.txt'
             self.pairs_file = \
                 './data/s2/verification_pairs_val.txt'
         else:
-            # self.pairs_file = \
-            #     '../nbs/data/s2/verification_pairs_test.txt'
             self.pairs_file = \
                 './data/s2/verification_pairs_test.txt'
 
