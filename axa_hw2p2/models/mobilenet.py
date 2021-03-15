@@ -264,6 +264,7 @@ class MobileNetV2():
         self.val_v_acc = 0
         self.trajectories = {'epoch': [],
                              'train_loss': [],
+                             'train_c_acc': [],
                              'val_c_loss': [],
                              'val_c_acc': [],
                              'val_v_acc':[]}
