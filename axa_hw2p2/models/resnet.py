@@ -545,6 +545,9 @@ class ResNetN():
                 similarity = np.append(similarity, sim_score.cpu().numpy().reshape(-1))
                 ver_bool = np.append(ver_bool, target)
 
+        print(similarity)
+        print(ver_bool)
+
         val_v_acc = roc_auc_score(ver_bool, similarity)
 
         return val_c_loss, val_c_acc, val_v_acc
