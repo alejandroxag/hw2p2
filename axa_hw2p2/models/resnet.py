@@ -560,8 +560,8 @@ class ResNetN():
             print('ROC calculation error')
             print(similarity)
             print(ver_bool)
-            print(torch.sum(emb_0))
-            print(torch.sum(emb_1))
+            print(emb_0)
+            print(emb_1)
             val_v_acc = -1
 
 
