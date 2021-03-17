@@ -1,7 +1,6 @@
 # Kaggle data
 nbs/data/
 data/
-results/
 
 *.bak
 .gitattributes
