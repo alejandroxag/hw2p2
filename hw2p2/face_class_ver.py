@@ -23,16 +23,16 @@ from datetime import datetime
 import os
 import time
 
-from datasets import FaceClassificationDataset, FaceVerificationDataset
-from losses import CenterLoss
-from models.mobilenet import *
-from models.resnet import *
-from hyperoptimization import fit_predict
-# from axa_hw2p2.datasets import FaceClassificationDataset, FaceVerificationDataset
-# from axa_hw2p2.losses import CenterLoss
-# from axa_hw2p2.models.mobilenet import *
-# from axa_hw2p2.models.resnet import *
-# from axa_hw2p2.hyperoptimization import fit_predict
+# from datasets import FaceClassificationDataset, FaceVerificationDataset
+# from losses import CenterLoss
+# from models.mobilenet import *
+# from models.resnet import *
+# from hyperoptimization import fit_predict
+from .datasets import FaceClassificationDataset, FaceVerificationDataset
+from .losses import CenterLoss
+from .models.mobilenet import *
+from .models.resnet import *
+from .hyperoptimization import fit_predict
 
 # Cell
 def main(model, batch_size, sample_size=None, max_evals=20):

@@ -23,14 +23,14 @@ from datetime import datetime
 import os
 import time
 
-from datasets import FaceClassificationDataset, FaceVerificationDataset
-from losses import CenterLoss
-from models.mobilenet import *
-from models.resnet import *
-# from axa_hw2p2.datasets import FaceClassificationDataset, FaceVerificationDataset
-# from axa_hw2p2.losses import CenterLoss
-# from axa_hw2p2.models.mobilenet import *
-# from axa_hw2p2.models.resnet import *
+# from datasets import FaceClassificationDataset, FaceVerificationDataset
+# from losses import CenterLoss
+# from models.mobilenet import *
+# from models.resnet import *
+from .datasets import FaceClassificationDataset, FaceVerificationDataset
+from .losses import CenterLoss
+from .models.mobilenet import *
+from .models.resnet import *
 
 # Cell
 def fit_predict(mc, verbose, trials=None, sample_size=None):
@@ -79,6 +79,10 @@ def fit_predict(mc, verbose, trials=None, sample_size=None):
                               num_workers=num_workers,
                               pin_memory=torch.cuda.is_available(),
                               drop_last=True)
+
+    assert len(train_loader) > 0
+    assert len(val_c_loader) > 0
+    assert len(val_v_loader) > 0
 
     if mc['model'] == 'mobilenet':
         model = MobileNetV2(n_in_ch_bn=mc['in_channels'],

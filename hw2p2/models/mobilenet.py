@@ -11,8 +11,8 @@ from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d, softmax
 from sklearn.metrics import roc_auc_score
-from losses import CenterLoss
-# from axa_hw2p2.losses import CenterLoss
+# from losses import CenterLoss
+from ..losses import CenterLoss
 
 # Cell
 class _BottleNeck(nn.Module):

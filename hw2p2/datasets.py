@@ -45,9 +45,9 @@ class FaceClassificationDataset(Dataset):
                 self.labels = np.array(sample)
                 self.labels.sort(axis=0)
             else:
-               self.labels = [int(d) for d in os.listdir(self.data_dir)]
-               self.labels = np.array(self.labels)
-               self.labels.sort(axis=0)
+                self.labels = [int(d) for d in os.listdir(self.data_dir)]
+                self.labels = np.array(self.labels)
+                self.labels.sort(axis=0)
         else:
             self.labels = os.listdir(self.data_dir)
             self.labels = np.array([int(f.split('.')[0]) for f in self.labels])
