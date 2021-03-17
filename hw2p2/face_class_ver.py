@@ -35,20 +35,20 @@ from .models.resnet import *
 from .hyperoptimization import fit_predict
 
 # Cell
-def main(model, batch_size, sample_size=None, max_evals=20):
+def main(model, sample_size=None, max_evals=20):
 
     # Hyperparameters space
     space = {'model': hp.choice(label='model', options=[model]),
              'in_channels': hp.choice(label='in_channels', options=[3]),
             #  'n_classes': hp.choice(label='n_classes', options=[4000]),
-             'batch_size': scope.int(hp.choice(label='batch_size', options=[batch_size])),
-             'lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(3e-1)),
-             'lr_decay': hp.choice(label='lr_decay', options=[0.96,0.97,0.98,0.99,1]),
-             'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[1,2,4]),
+             'batch_size': scope.int(hp.choice(label='batch_size', options=[16])),
+             'lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(5e-2)),
+             'lr_decay': hp.choice(label='lr_decay', options=[0.5]),
+             'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[3]),
              'center_loss': hp.choice(label='center_loss', options=[True]),
-             'lr_cl': hp.choice(label='lr_cl', options=[0.4,0.5,0.6]),
+             'lr_cl': hp.loguniform(label='lr_cl', low=np.log(5e-3), high=np.log(2e-1)),
              'alpha_cl': hp.choice(label='alpha_cl', options=[0.01,0.1,1]),
-             'n_epochs': hp.choice(label='n_epochs', options=[100]),
+             'n_epochs': hp.choice(label='n_epochs', options=[5]),
              'eval_steps': scope.int(hp.choice(label='eval_steps', options=[4])),}
 
     if sample_size==None:
@@ -58,10 +58,48 @@ def main(model, batch_size, sample_size=None, max_evals=20):
 
     # Hyperparameters search
     trials = Trials()
-    fmin_objective = partial(fit_predict, verbose=True, trials=trials, sample_size=sample_size)
-    fmin(fmin_objective, space=space,
-         algo=tpe.suggest, max_evals=max_evals, trials=trials)
+    fmin_objective = partial(fit_predict, trials=trials, verbose=True, sample_size=sample_size)
+    best = fmin(fmin_objective, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
+
+    keys = ['loss','val_c_loss','train_c_acc','val_c_acc','val_v_acc','run_time','trajectories']
+
+    best_class = trials.results[np.argmax([r['val_c_acc'] for r in trials.results])]
+    best_class_res_dict = {key: best_class[key] for key in keys}
+    best_class_model = best_class['model']
+    best_class_mc = best_class['mc']
+    best_class_time_stamp = best_class['time_stamp']
+
+    s = 'hw2p2' + '_' + best_class_time_stamp
+    filename = f'./results/{s}.pth'
+
+    json_mc = json.dumps(best_class_mc)
+    with open(f'./results/mc_{best_class_time_stamp}.json', 'w') as bfm:
+        bfm.write(json_mc)
+    json_res = json.dumps(best_class_res_dict)
+    with open(f'./results/res_dict_{best_class_time_stamp}.json', 'w') as bfm:
+        bfm.write(json_res)
+
+    torch.save(best_class_model.model.state_dict(), filename)
+
+    best_ver = trials.results[np.argmax([r['val_v_acc'] for r in trials.results])]
+    best_ver_res_dict = {key: best_ver[key] for key in keys}
+    best_ver_model = best_ver['model']
+    best_ver_mc = best_ver['mc']
+    best_ver_time_stamp = best_ver['time_stamp']
+
+    s = 'hw2p2' + '_' + best_ver_time_stamp
+    filename = f'./results/{s}.pth'
+
+    json_mc = json.dumps(best_ver_mc)
+    with open(f'./results/mc_{best_ver_time_stamp}.json', 'w') as bfm:
+        bfm.write(json_mc)
+    json_res = json.dumps(best_ver_res_dict)
+    with open(f'./results/res_dict_{best_ver_time_stamp}.json', 'w') as bfm:
+        bfm.write(json_res)
+
+    torch.save(best_ver_model.model.state_dict(), filename)
+
 
 # Cell
 if __name__ == "__main__":
-    main(model='resnet18', batch_size=512, sample_size=None, max_evals=20)
+    main(model='resnet18', sample_size=20, max_evals=5)

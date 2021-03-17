@@ -375,6 +375,18 @@ class ResNetN():
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+        self.train_loss = -1
+        self.val_c_loss = -1
+        self.train_c_acc = 0
+        self.val_c_acc = 0
+        self.val_v_acc = 0
+        self.trajectories = {'epoch': [],
+                             'train_loss': [],
+                             'train_c_acc': [],
+                             'val_c_loss': [],
+                             'val_c_acc': [],
+                             'val_v_acc':[]}
+
     def fit(self, train_loader, val_c_loader, val_v_loader):
 
         print("="*30 + 'Start Fitting' + "="*30)
@@ -405,19 +417,11 @@ class ResNetN():
                            step_size=self.n_epochs//self.n_lr_decay_steps,
                            gamma=self.lr_decay)
 
-        self.train_loss = -1
-        self.val_c_loss = -1
-        self.train_c_acc = 0
-        self.val_c_acc = 0
-        self.val_v_acc = 0
-        self.trajectories = {'epoch': [],
-                             'train_loss': [],
-                             'train_c_acc': [],
-                             'val_c_loss': [],
-                             'val_c_acc': [],
-                             'val_v_acc':[]}
+        break_flag = False
 
         for epoch in range(self.n_epochs):
+
+            if break_flag: continue
 
             train_loss = 0
             train_correct_predictions = 0
@@ -451,6 +455,13 @@ class ResNetN():
                     for p in center_loss_f.parameters():
                         p.grad.data *= (1./self.alpha_cl)
 
+
+                if np.isnan(float(loss)):
+                    print('muerte y destruccion')
+                    break
+                    break_flag = True
+
+                nn.utils.clip_grad_norm_(self.model.parameters(), 10)
                 optimizer.step()
 
                 if self.center_loss == True:
@@ -490,6 +501,8 @@ class ResNetN():
                 if self.val_v_acc < val_v_acc: self.val_v_acc = val_v_acc
 
         print("="*72+"\n")
+
+
 
 
     def evaluate_performance(self, val_c_loader, val_v_loader):

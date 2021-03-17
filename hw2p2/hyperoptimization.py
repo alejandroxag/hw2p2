@@ -53,7 +53,6 @@ def fit_predict(mc, verbose, trials=None, sample_size=None):
         val_c_dataset = FaceClassificationDataset(mode='val')
         val_v_dataset = FaceVerificationDataset(mode='val')
     else:
-        assert mc['batch_size'] < 2*sample_size
         sample = np.array(range(sample_size))
         train_dataset = FaceClassificationDataset(sample, mode='train')
         val_c_dataset = FaceClassificationDataset(sample, mode='val')
@@ -122,30 +121,17 @@ def fit_predict(mc, verbose, trials=None, sample_size=None):
               val_c_loader=val_c_loader,
               val_v_loader=val_v_loader)
 
-    this_mc = {'loss': model.val_c_loss,
-                'val_c_acc': model.val_c_acc,
-                'val_v_acc': model.val_v_acc,
-                'mc': mc,
-                'run_time': time.time()-start_time,
-                'trajectories': model.trajectories}
-
-    this_mc = json.dumps(this_mc)
-
-    s = 'hw2p2' + '_' + now
-    filename = f'./results/{s}.pth'
-
-    torch.save(model.model.state_dict(), filename)
-
-    with open(f'./results/mc_{now}.json', 'w') as bfm:
-        bfm.write(this_mc)
-
     if trials is not None:
-        results = {'loss': model.val_c_loss,
+        results = {'loss': model.train_loss,
+                   'val_c_loss': model.val_c_loss,
+                   'train_c_acc': model.train_c_acc,
                    'val_c_acc': model.val_c_acc,
                    'val_v_acc': model.val_v_acc,
                    'mc': mc,
                    'run_time': time.time()-start_time,
                    'trajectories': model.trajectories,
+                   'model': model,
+                   'time_stamp': now,
                    'status': STATUS_OK}
         return results
     else:
