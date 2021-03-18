@@ -23,16 +23,16 @@ from datetime import datetime
 import os
 import time
 
-# from datasets import FaceClassificationDataset, FaceVerificationDataset
-# from losses import CenterLoss
-# from models.mobilenet import *
-# from models.resnet import *
-# from hyperoptimization import fit_predict
-from .datasets import FaceClassificationDataset, FaceVerificationDataset
-from .losses import CenterLoss
-from .models.mobilenet import *
-from .models.resnet import *
-from .hyperoptimization import fit_predict
+from datasets import FaceClassificationDataset, FaceVerificationDataset
+from losses import CenterLoss
+from models.mobilenet import *
+from models.resnet import *
+from hyperoptimization import fit_predict
+# from hw2p2.datasets import FaceClassificationDataset, FaceVerificationDataset
+# from hw2p2.losses import CenterLoss
+# from hw2p2.models.mobilenet import *
+# from hw2p2.models.resnet import *
+# from hw2p2.hyperoptimization import fit_predict
 
 # Cell
 def main(model, sample_size=None, max_evals=20):
@@ -41,14 +41,14 @@ def main(model, sample_size=None, max_evals=20):
     space = {'model': hp.choice(label='model', options=[model]),
              'in_channels': hp.choice(label='in_channels', options=[3]),
             #  'n_classes': hp.choice(label='n_classes', options=[4000]),
-             'batch_size': scope.int(hp.choice(label='batch_size', options=[16])),
+             'batch_size': scope.int(hp.choice(label='batch_size', options=[128,256,512])),
              'lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(5e-2)),
              'lr_decay': hp.choice(label='lr_decay', options=[0.5]),
              'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[3]),
              'center_loss': hp.choice(label='center_loss', options=[True]),
              'lr_cl': hp.loguniform(label='lr_cl', low=np.log(5e-3), high=np.log(2e-1)),
              'alpha_cl': hp.choice(label='alpha_cl', options=[0.01,0.1,1]),
-             'n_epochs': hp.choice(label='n_epochs', options=[5]),
+             'n_epochs': hp.choice(label='n_epochs', options=[1000]),
              'eval_steps': scope.int(hp.choice(label='eval_steps', options=[4])),}
 
     if sample_size==None:
@@ -102,4 +102,4 @@ def main(model, sample_size=None, max_evals=20):
 
 # Cell
 if __name__ == "__main__":
-    main(model='resnet18', sample_size=20, max_evals=5)
+    main(model='resnet18', sample_size=None, max_evals=20)

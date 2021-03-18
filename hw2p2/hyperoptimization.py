@@ -23,14 +23,14 @@ from datetime import datetime
 import os
 import time
 
-# from datasets import FaceClassificationDataset, FaceVerificationDataset
-# from losses import CenterLoss
-# from models.mobilenet import *
-# from models.resnet import *
-from .datasets import FaceClassificationDataset, FaceVerificationDataset
-from .losses import CenterLoss
-from .models.mobilenet import *
-from .models.resnet import *
+from datasets import FaceClassificationDataset, FaceVerificationDataset
+from losses import CenterLoss
+from models.mobilenet import *
+from models.resnet import *
+# from hw2p2.datasets import FaceClassificationDataset, FaceVerificationDataset
+# from hw2p2.losses import CenterLoss
+# from hw2p2.models.mobilenet import *
+# from hw2p2.models.resnet import *
 
 # Cell
 def fit_predict(mc, verbose, trials=None, sample_size=None):

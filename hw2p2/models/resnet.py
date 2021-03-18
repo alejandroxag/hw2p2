@@ -14,8 +14,8 @@ from torch.optim.lr_scheduler import StepLR
 from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d, softmax
 from sklearn.metrics import roc_auc_score
 from functools import partial
-# from losses import CenterLoss
-from ..losses import CenterLoss
+from losses import CenterLoss
+# from hw2p2.losses import CenterLoss
 
 # Cell
 class Conv2dAuto(nn.Conv2d):
