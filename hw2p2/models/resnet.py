@@ -12,10 +12,13 @@ import torch.nn as nn
 from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 from torch.nn.functional import cosine_similarity, adaptive_avg_pool2d, softmax
+
 from sklearn.metrics import roc_auc_score
 from functools import partial
-from losses import CenterLoss
-# from hw2p2.losses import CenterLoss
+
+
+# from losses import CenterLoss
+from ..losses import CenterLoss
 
 # Cell
 class Conv2dAuto(nn.Conv2d):
@@ -343,6 +346,7 @@ class ResNetN():
                  lr_decay: float,
                  n_lr_decay_steps: int,
                  center_loss: bool,
+                 weight_decay: float,
                  lr_cl: float,
                  alpha_cl: float,
                  n_epochs: int,
@@ -354,6 +358,7 @@ class ResNetN():
         self.in_channels = in_channels
         self.n_classes = n_classes
         self.center_loss = center_loss
+        self.weight_decay = weight_decay
         if res_net_deepth == 50: self.n_embeddings = 2048
         else: self.n_embeddings = 512
 
@@ -382,10 +387,10 @@ class ResNetN():
         self.val_v_acc = 0
         self.trajectories = {'epoch': [],
                              'train_loss': [],
-                             'train_c_acc': [],
-                             'val_c_loss': [],
-                             'val_c_acc': [],
-                             'val_v_acc':[]}
+                             'train_acc': [],
+                             'clf_loss': [],
+                             'clf_acc': [],
+                             'vrf_acc':[]}
 
     def fit(self, train_loader, val_c_loader, val_v_loader):
 
@@ -398,20 +403,12 @@ class ResNetN():
                                    feat_dim=self.n_embeddings,
                                    use_gpu=torch.cuda.is_available())
 
-        # optimizer = Adam(self.model.parameters(),
-        #                  lr=self.lr,
-        #                  weight_decay=0.00004)
+        optimizer = Adam(self.model.parameters(),
+                         lr=self.lr,
+                         weight_decay=self.weight_decay)
 
-        # optimizer_centerloss = Adam(center_loss_f.parameters(),
-        #                             lr=self.lr_cl)
-
-        optimizer = SGD(self.model.parameters(),
-                        lr=self.lr,
-                        weight_decay=0.00004,
-                        momentum=0.9)
-
-        optimizer_centerloss = SGD(center_loss_f.parameters(),
-                                   lr=self.lr_cl)
+        optimizer_centerloss = Adam(center_loss_f.parameters(),
+                                    lr=self.lr_cl)
 
         scheduler = StepLR(optimizer=optimizer,
                            step_size=self.n_epochs//self.n_lr_decay_steps,
@@ -433,12 +430,8 @@ class ResNetN():
 
                 embeddings, cl_output = self.model(img)
 
-                if self.center_loss == True:
-                    loss = self.alpha_cl * center_loss_f(embeddings, label) + \
+                loss = self.alpha_cl * center_loss_f(embeddings, label) + \
                        cross_entroypy_loss_f(cl_output, label)
-
-                else:
-                    loss = cross_entroypy_loss_f(cl_output, label)
 
                 predicted = torch.argmax(cl_output.data, 1)
                 train_correct_predictions += (predicted == label).sum().item()
@@ -481,17 +474,17 @@ class ResNetN():
 
                 self.trajectories['epoch'].append(epoch)
                 self.trajectories['train_loss'].append(train_loss)
-                self.trajectories['train_c_acc'].append(train_c_acc)
-                self.trajectories['val_c_loss'].append(val_c_loss)
-                self.trajectories['val_c_acc'].append(val_c_acc)
-                self.trajectories['val_v_acc'].append(val_v_acc)
+                self.trajectories['train_acc'].append(train_c_acc)
+                self.trajectories['clf_loss'].append(val_c_loss)
+                self.trajectories['clf_acc'].append(val_c_acc)
+                self.trajectories['vrf_acc'].append(val_v_acc)
 
                 display_str = f'epoch: {epoch} '
-                display_str += f'train_loss: {np.round(train_loss,4)} '
-                display_str += f'train_c_acc: {np.round(train_c_acc,4):.2%} '
-                display_str += f'val_c_loss: {np.round(val_c_loss,4)} '
-                display_str += f'val_c_acc: {np.round(val_c_acc,4):.2%} '
-                display_str += f'val_v_acc: {np.round(val_v_acc,4):.2%} '
+                display_str += f'train_loss: {np.round(train_loss,3)} '
+                display_str += f'train_acc: {np.round(train_c_acc,3):.2%} '
+                display_str += f'clf_loss: {np.round(val_c_loss,3)} '
+                display_str += f'clf_acc: {np.round(val_c_acc,3):.2%} '
+                display_str += f'vrf_acc: {np.round(val_v_acc,3):.2%} '
                 print(display_str)
 
                 if self.val_c_loss > val_c_loss: self.val_c_loss = val_c_loss
@@ -503,8 +496,6 @@ class ResNetN():
         print("="*72+"\n")
 
 
-
-
     def evaluate_performance(self, val_c_loader, val_v_loader):
 
         cross_entroypy_loss_f = nn.CrossEntropyLoss()
@@ -512,13 +503,11 @@ class ResNetN():
                                    feat_dim=self.n_embeddings,
                                    use_gpu=torch.cuda.is_available())
 
-        self.model.to(self.device)
         self.model.eval()
 
         val_c_loss = 0.0
         total_predictions = 0.0
         correct_predictions = 0.0
-
         with torch.no_grad():
             for batch_idx, (img, label) in enumerate(val_c_loader):
                 img = img.to(self.device)
@@ -526,12 +515,8 @@ class ResNetN():
 
                 embeddings, cl_output = self.model(img)
 
-                if self.center_loss == True:
-                    loss = self.alpha_cl * center_loss_f(embeddings, label) + \
+                loss = self.alpha_cl * center_loss_f(embeddings, label) + \
                        cross_entroypy_loss_f(cl_output, label)
-
-                else:
-                    loss = cross_entroypy_loss_f(cl_output, label)
 
                 loss = loss.detach()
                 val_c_loss += loss.item()
@@ -543,30 +528,31 @@ class ResNetN():
         val_c_loss /= len(val_c_loader)
         val_c_acc = correct_predictions/total_predictions
 
-        similarity = np.array([])
-        ver_bool = np.array([])
+#         similarity = np.array([])
+#         ver_bool = np.array([])
 
-        with torch.no_grad():
-            for batch_idx, (img_0, img_1, target) in enumerate(val_v_loader):
-                img_0 = img_0.to(self.device)
-                img_1 = img_1.to(self.device)
+#         with torch.no_grad():
+#             for batch_idx, (img_0, img_1, target) in enumerate(val_v_loader):
+#                 img_0 = img_0.to(self.device)
+#                 img_1 = img_1.to(self.device)
 
-                emb_0 = self.model(img_0)[0]
-                emb_1 = self.model(img_1)[0]
+#                 emb_0 = self.model(img_0)[0]
+#                 emb_1 = self.model(img_1)[0]
 
-                sim_score = cosine_similarity(emb_0, emb_1)
-                similarity = np.append(similarity, sim_score.cpu().numpy().reshape(-1))
-                ver_bool = np.append(ver_bool, target)
+#                 sim_score = cosine_similarity(emb_0, emb_1)
+#                 similarity = np.append(similarity, sim_score.cpu().numpy().reshape(-1))
+#                 ver_bool = np.append(ver_bool, target)
 
-        try:
-            val_v_acc = roc_auc_score(ver_bool, similarity)
-        except:
-            print('ROC calculation error')
-            print(similarity)
-            print(ver_bool)
-            print(emb_0)
-            print(emb_1)
-            val_v_acc = -1
+#         try:
+#             val_v_acc = roc_auc_score(ver_bool, similarity)
+#         except:
+#             print('ROC calculation error')
+#             print(similarity)
+#             print(ver_bool)
+#             print(emb_0)
+#             print(emb_1)
+#             val_v_acc = -1
 
-
-        return val_c_loss, val_c_acc, val_v_acc
+        self.model.train()
+        #return val_c_loss, val_c_acc, val_v_acc
+        return val_c_loss, val_c_acc, 0

@@ -3,10 +3,15 @@
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
 index = {"CenterLoss": "center_loss.ipynb",
-         "FaceClassificationDataset": "datasets.ipynb",
-         "FaceVerificationDataset": "datasets.ipynb",
-         "main": "face_class_ver.ipynb",
+         "FaceClassificationDataset": "face_class_ver.ipynb",
+         "FaceVerificationDataset": "face_class_ver.ipynb",
+         "SIZE": "face_class_ver.ipynb",
+         "NO_TRANSF": "face_class_ver.ipynb",
+         "TRAIN_TRANSF": "face_class_ver.ipynb",
+         "VAL_TRANSF": "face_class_ver.ipynb",
+         "create_dataloaders": "face_class_ver.ipynb",
          "fit_predict": "hyper_p_opt.ipynb",
+         "main": "face_class_ver.ipynb",
          "MobileNetV2": "models_mobilenet.ipynb",
          "Conv2dAuto": "models_resnet.ipynb",
          "conv3x3": "models_resnet.ipynb",

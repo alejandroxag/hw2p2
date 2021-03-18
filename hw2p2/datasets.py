@@ -45,7 +45,8 @@ class FaceClassificationDataset(Dataset):
                 self.labels = np.array(sample)
                 self.labels.sort(axis=0)
             else:
-                self.labels = [int(d) for d in os.listdir(self.data_dir)]
+                self.labels = [int(d) for file in os.listdir(f'self.data_dir/{d}') \
+                                                   for d in os.listdir(self.data_dir)]
                 self.labels = np.array(self.labels)
                 self.labels.sort(axis=0)
         else:
@@ -123,11 +124,6 @@ class FaceVerificationDataset(Dataset):
 
         with open(self.pairs_file) as f:
             self.pairs = [l.rstrip().split() for l in f]
-
-        if sample is not None:
-            sample = np.array(sample)
-            sample.sort(axis=0)
-            self.pairs = [self.pairs[i] for i in sample]
 
     def __len__(self): return len(self.pairs)
 

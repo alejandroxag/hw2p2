@@ -23,19 +23,20 @@ from datetime import datetime
 import os
 import time
 
-from datasets import FaceClassificationDataset, FaceVerificationDataset
-from losses import CenterLoss
-from models.mobilenet import *
-from models.resnet import *
-# from hw2p2.datasets import FaceClassificationDataset, FaceVerificationDataset
-# from hw2p2.losses import CenterLoss
-# from hw2p2.models.mobilenet import *
-# from hw2p2.models.resnet import *
+# from datasets import FaceClassificationDataset, FaceVerificationDataset
+# from losses import CenterLoss
+# from models.mobilenet import *
+# from models.resnet import *
+from .datasets import FaceClassificationDataset, FaceVerificationDataset
+from .losses import CenterLoss
+from .models.resnet import *
 
 # Cell
-def fit_predict(mc, verbose, trials=None, sample_size=None):
+def fit_predict(mc, verbose, trials=None):
 
     assert mc['model'] in ['resnet18', 'resnet34', 'resnet50', 'mobilenet']
+
+    train_loader, clf_loader, vrf_loader = create_dataloaders(mc)
 
     print(f'\nCurrent directory: {os.getcwd()}\n')
     now = datetime.now().strftime("%d-%m-%y_%H-%M-%S")
@@ -46,80 +47,25 @@ def fit_predict(mc, verbose, trials=None, sample_size=None):
     print(pd.Series(mc))
     print('='*26+'\n')
 
-    num_workers = 8 if torch.cuda.is_available() else 0
+    if  mc['model'] == 'resnet18': resnet_n_layers = 18
+    if  mc['model'] == 'resnet34': resnet_n_layers = 34
+    if  mc['model'] == 'resnet50': resnet_n_layers = 50
 
-    if sample_size == None:
-        train_dataset = FaceClassificationDataset(mode='train')
-        val_c_dataset = FaceClassificationDataset(mode='val')
-        val_v_dataset = FaceVerificationDataset(mode='val')
-    else:
-        sample = np.array(range(sample_size))
-        train_dataset = FaceClassificationDataset(sample, mode='train')
-        val_c_dataset = FaceClassificationDataset(sample, mode='val')
-        val_v_dataset = FaceVerificationDataset(sample, mode='val')
-
-    print(f'train_dataset_len: {len(train_dataset)}, val_c_dataset_len: {len(val_c_dataset)}, val_v_dataset_len: {len(val_v_dataset)}')
-
-    train_loader = DataLoader(train_dataset,
-                              shuffle=True,
-                              batch_size=mc['batch_size'],
-                              num_workers=num_workers,
-                              pin_memory=torch.cuda.is_available(),
-                              drop_last=True)
-    val_c_loader = DataLoader(val_c_dataset,
-                              shuffle=False,
-                              batch_size=mc['batch_size'],
-                              num_workers=num_workers,
-                              pin_memory=torch.cuda.is_available(),
-                              drop_last=True)
-    val_v_loader = DataLoader(val_v_dataset,
-                              shuffle=False,
-                              batch_size=mc['batch_size'],
-                              num_workers=num_workers,
-                              pin_memory=torch.cuda.is_available(),
-                              drop_last=True)
-
-    assert len(train_loader) > 0
-    assert len(val_c_loader) > 0
-    assert len(val_v_loader) > 0
-
-    if mc['model'] == 'mobilenet':
-        model = MobileNetV2(n_in_ch_bn=mc['in_channels'],
-                            ls_out_ch_bn=[16, 24, 32, 64, 96, 160, 320],
-                            ls_n_rep_bn=[1, 2, 3, 4, 3, 3, 1],
-                            ls_stride_bn=[1, 2, 2, 2, 1, 2, 1],
-                            ls_exp_fct_t_bn=[1, 6, 6, 6, 6, 6, 6],
-                            n_embeddings=1280,
-                            n_classes=mc['n_classes'],
-                            lr=mc['lr'],
-                            lr_decay=mc['lr_decay'],
-                            n_lr_decay_steps=mc['n_lr_decay_steps'],
-                            center_loss=mc['center_loss'],
-                            lr_cl=mc['lr_cl'],
-                            alpha_cl=mc['alpha_cl'],
-                            n_epochs=mc['n_epochs'],
-                            eval_steps=mc['eval_steps'])
-    else:
-        if  mc['model'] == 'resnet18': resnet_n_layers = 18
-        if  mc['model'] == 'resnet34': resnet_n_layers = 34
-        if  mc['model'] == 'resnet50': resnet_n_layers = 50
-
-        model = ResNetN(resnet_n_layers,
-                        in_channels=mc['in_channels'],
-                        n_classes=mc['n_classes'],
-                        lr=mc['lr'],
-                        lr_decay=mc['lr_decay'],
-                        n_lr_decay_steps=mc['n_lr_decay_steps'],
-                        center_loss = mc['center_loss'],
-                        lr_cl=mc['lr_cl'],
-                        alpha_cl=mc['alpha_cl'],
-                        n_epochs=mc['n_epochs'],
-                        eval_steps=mc['eval_steps'])
-
+    model = ResNetN(resnet_n_layers,
+                    in_channels=mc['in_channels'],
+                    n_classes=mc['n_classes'],
+                    lr=mc['lr'],
+                    lr_decay=mc['lr_decay'],
+                    n_lr_decay_steps=mc['n_lr_decay_steps'],
+                    center_loss = mc['center_loss'],
+                    lr_cl=mc['lr_cl'],
+                    alpha_cl=mc['alpha_cl'],
+                    n_epochs=mc['n_epochs'],
+                    eval_steps=mc['eval_steps'])
 
     model.fit(train_loader=train_loader,
-              val_c_loader=val_c_loader,
-              val_v_loader=val_v_loader)
+              val_c_loader=clf_loader,
+              val_v_loader=vrf_loader)
 
     if trials is not None:
         results = {'loss': model.train_loss,
