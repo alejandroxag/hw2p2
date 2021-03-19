@@ -396,7 +396,7 @@ class ResNetN():
 
         print("="*30 + 'Start Fitting' + "="*30)
         self.model.to(self.device)
-        self.model.train()
+
 
         cross_entroypy_loss_f = nn.CrossEntropyLoss()
         center_loss_f = CenterLoss(num_classes=self.n_classes,

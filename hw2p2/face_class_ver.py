@@ -64,9 +64,9 @@ class FaceClassificationDataset(Dataset):
         assert mode == 'test' and n_classes == None or mode != 'test'
 
         # Directory setup
-        data_dirs = {'train': './nbs/data/s1/train_data',
-                     'val': './nbs/data/s1/val_data',
-                     'test': './nbs/data/s1/test_data'}
+        data_dirs = {'train': './data/s1/train_data',
+                     'val': './data/s1/val_data',
+                     'test': './data/s1/test_data'}
         self.data_dir = data_dirs[mode]
         self.mode = mode
         self.trans_list = trans_list
@@ -129,8 +129,8 @@ class FaceVerificationDataset(Dataset):
         assert mode == 'test' and sample == None or mode != 'test'
 
         # Directory setup
-        pairs_dirs = {'val': './nbs/data/s2/verification_pairs_val.txt',
-                     'test': './nbs/data/s2/verification_pairs_test.txt'}
+        pairs_dirs = {'val': './data/s2/verification_pairs_val.txt',
+                     'test': './data/s2/verification_pairs_test.txt'}
         self.pairs_dir = pairs_dirs[mode]
         self.mode = mode
         self.trans_list = trans_list
@@ -144,8 +144,8 @@ class FaceVerificationDataset(Dataset):
     def __getitem__(self, idx):
         preprocess = transforms.Compose(self.trans_list)
 
-        image_tensor_0 = Image.open('./nbs/data/s2/' + self.pairs[idx][0])
-        image_tensor_1 = Image.open('./nbs/data/s2/' + self.pairs[idx][1])
+        image_tensor_0 = Image.open('./data/s2/' + self.pairs[idx][0])
+        image_tensor_1 = Image.open('./data/s2/' + self.pairs[idx][1])
 
         image_tensor_0 = preprocess(image_tensor_0)
         image_tensor_1 = preprocess(image_tensor_1)
@@ -286,21 +286,22 @@ def main(model, max_evals=2):
                  'model': hp.choice(label='model', options=['resnetkin']),
                  'iterations': hp.choice(label='iterations', options=[300_000]), #(n_samples/batch_size) * epochs = (400_000/128) * 100
                  'batch_size': scope.int(hp.choice(label='batch_size', options=[128])),
-                 #'initial_lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(5e-2)),
-                 'initial_lr': hp.choice(label='lr', options=[0.1]),
+                 'initial_lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(5e-2)),
+                 # 'initial_lr': hp.choice(label='lr', options=[0.1]),
                  'lr_decay': hp.choice(label='lr_decay', options=[0.5]),
                  'adjust_lr_step': hp.choice(label='n_lr_decay_steps', options=[300_000//2]),
                  'weight_decay': hp.choice(label='weight_decay', options=[5e-4]),
-                 'display_step': scope.int(hp.choice(label='eval_epochs', options=[1_000])),
+#                  'display_step': scope.int(hp.choice(label='eval_epochs', options=[1_000])),
+                 'display_step': scope.int(hp.choice(label='eval_epochs', options=[1])),
                  'random_seed': scope.int(hp.quniform('random_seed', 1, 10, 1))}
 
     # Hyperparameters search
     trials = Trials()
     fmin_objective = partial(fit_predict, trials=trials, verbose=True)
-    fmin(fmin_objective, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
+    best_model = fmin(fmin_objective, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
 
     # Save output
-    hyperopt_file = './nbs/results/trials.p'
+    hyperopt_file = './results/trials.p'
     with open(hyperopt_file, "wb") as f:
         pickle.dump(trials, f)
 
