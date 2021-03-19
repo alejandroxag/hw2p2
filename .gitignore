@@ -2,6 +2,8 @@
 nbs/data/
 data/
 results/
+nbs/checkpoint/
+checkpoint/
 
 *.bak
 .gitattributes

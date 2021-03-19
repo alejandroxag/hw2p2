@@ -176,8 +176,8 @@ class ResNet(object):
                 if (step % self.params['display_step']) == 0:
                     train_loss, train_acc = self.evaluate_performance(loader=train_loader, criterion=criterion)
                     val_loss, val_acc = self.evaluate_performance(loader=val_loader, criterion=criterion)
-                    display_str = f'step {step}, train_loss {train_loss:.4f}, train_acc {train_acc}'
-                    display_str += f' val_loss {val_loss:.4f}, val_acc {val_acc}'
+                    display_str = f'step: {step}\t train_loss: {train_loss:.4f} train_acc {train_acc:.2f}'
+                    display_str += f'\t val_loss: {val_loss:.4f} val_acc: {val_acc:.2f}'
                     print(display_str)
 
                     if val_acc > self.best_acc:
