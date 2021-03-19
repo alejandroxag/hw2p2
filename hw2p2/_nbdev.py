@@ -27,7 +27,10 @@ index = {"CenterLoss": "center_loss.ipynb",
          "resnet18": "models_resnet.ipynb",
          "resnet34": "models_resnet.ipynb",
          "resnet50": "models_resnet.ipynb",
-         "ResNetN": "models_resnet.ipynb"}
+         "ResNetN": "models_resnet.ipynb",
+         "BasicBlock": "models_resnet2.ipynb",
+         "Bottleneck": "models_resnet2.ipynb",
+         "ResNet": "models_resnet2.ipynb"}
 
 modules = ["losses.py",
            "datasets.py",
@@ -35,7 +38,8 @@ modules = ["losses.py",
            "hyperoptimization.py",
            "kaggle_data_setup.py",
            "models/mobilenet.py",
-           "models/resnet.py"]
+           "models/resnet.py",
+           "models/resnet2.py"]
 
 doc_url = "https://alejandroxag.github.io/hw2p2/"
 

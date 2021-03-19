@@ -410,9 +410,9 @@ class ResNetN():
         optimizer_centerloss = Adam(center_loss_f.parameters(),
                                     lr=self.lr_cl)
 
-        scheduler = StepLR(optimizer=optimizer,
-                           step_size=self.n_epochs//self.n_lr_decay_steps,
-                           gamma=self.lr_decay)
+        #scheduler = StepLR(optimizer=optimizer,
+        #                   step_size=self.n_epochs//self.n_lr_decay_steps,
+        #                   gamma=self.lr_decay)
 
         break_flag = False
 
@@ -460,7 +460,7 @@ class ResNetN():
                 if self.center_loss == True:
                     optimizer_centerloss.step()
 
-                scheduler.step()
+                #scheduler.step()
 
                 train_loss += loss.item()
 

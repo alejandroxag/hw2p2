@@ -30,12 +30,12 @@ from hyperopt import fmin, tpe, hp, Trials, STATUS_OK
 from hyperopt.pyll.base import scope
 
 from .models.resnet import ResNetN
+from .models.resnet2 import ResNet
 
 #from hw2p2.datasets import FaceClassificationDataset, FaceVerificationDataset
 
 # Cell
 SIZE = 64
-
 NO_TRANSF = [transforms.ToTensor(),
              transforms.Resize(SIZE)]
 
@@ -194,7 +194,7 @@ def create_dataloaders(mc):
 # Cell
 def fit_predict(mc, verbose, trials=None):
 
-    assert mc['model'] in ['resnet18', 'resnet34', 'resnet50', 'mobilenet']
+    assert mc['model'] in ['resnetkin', 'resnet18', 'resnet34', 'resnet50', 'mobilenet']
 
     train_loader, clf_loader, vrf_loader = create_dataloaders(mc)
 
@@ -207,28 +207,27 @@ def fit_predict(mc, verbose, trials=None):
     print(pd.Series(mc))
     print('='*26+'\n')
 
-    resnet_layers_dict = {'resnet18': 18,
-                          'resnet34': 34}
-    resnet_n_layers = resnet_layers_dict[mc['model']]
+    if mc['model'] == 'resnet18':
+        resnet_layers_dict = {'resnet18': 18,
+                              'resnet34': 34}
+        resnet_n_layers = resnet_layers_dict[mc['model']]
+        model = ResNetN(resnet_n_layers,
+                        in_channels=mc['in_channels'],
+                        n_classes=mc['n_classes'],
+                        lr=mc['lr'],
+                        lr_decay=mc['lr_decay'],
+                        n_lr_decay_steps=mc['n_lr_decay_steps'],
+                        center_loss = mc['center_loss'],
+                        weight_decay = mc['weight_decay'],
+                        lr_cl=mc['lr_cl'],
+                        alpha_cl=mc['alpha_cl'],
+                        n_epochs=mc['n_epochs'],
+                        eval_steps=mc['eval_epochs'])
 
-    model = ResNetN(resnet_n_layers,
-                    in_channels=mc['in_channels'],
-                    n_classes=mc['n_classes'],
-                    lr=mc['lr'],
-                    lr_decay=mc['lr_decay'],
-                    n_lr_decay_steps=mc['n_lr_decay_steps'],
-                    center_loss = mc['center_loss'],
-                    weight_decay = mc['weight_decay'],
-                    lr_cl=mc['lr_cl'],
-                    alpha_cl=mc['alpha_cl'],
-                    n_epochs=mc['n_epochs'],
-                    eval_steps=mc['eval_epochs'])
-
-    model.fit(train_loader=train_loader,
+        model.fit(train_loader=train_loader,
               val_c_loader=clf_loader,
               val_v_loader=vrf_loader)
 
-    if trials is not None:
         print("\n")
         print(" model.val_c_loss", model.val_c_loss)
         print("\n")
@@ -242,30 +241,58 @@ def fit_predict(mc, verbose, trials=None):
                    'trajectories': model.trajectories,
                    'time_stamp': now,
                    'status': STATUS_OK}
-        return results
-    else:
-        return model
+
+
+
+
+    elif mc['model'] == 'resnetkin':
+        model = ResNet(params=mc)
+        model.fit(train_loader=train_loader, val_loader=clf_loader)
+        results = {'loss':  1.-model.best_acc,
+                   'train_loss': model.train_loss,
+                   'train_acc': model.train_accuracy,
+                   'val_loss': model.val_loss,
+                   'val_acc': model.val_c_acc,
+                   'mc': mc,
+                   'run_time': time.time()-start_time,
+                   'trajectories': model.trajectories,
+                   'time_stamp': now,
+                   'status': STATUS_OK}
+    return results
 
 # Cell
-def main(max_evals=2):
+def main(model, max_evals=2):
     # Hyperparameters space
-    space = {'model': hp.choice(label='model', options=['resnet18']),
-             'in_channels': hp.choice(label='in_channels', options=[3]),
-             'n_classes': hp.choice(label='n_classes', options=[4000]),
-             'batch_size': scope.int(hp.choice(label='batch_size', options=[2048])),
-             #'lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(5e-2)),
-             'lr': hp.choice(label='lr', options=[0.005]),
-             'lr_decay': hp.choice(label='lr_decay', options=[0.5]),
-             'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[2]),
-             'center_loss': hp.choice(label='center_loss', options=[True]),
-             'weight_decay': hp.choice(label='weight_decay', options=[0.0004]),
-             #'lr_cl': hp.loguniform(label='lr_cl', low=np.log(5e-3), high=np.log(2e-1)),
-             'lr_cl': hp.choice(label='lr_cl', options=[0.005]),
-             'alpha_cl': hp.choice(label='alpha_cl', options=[0.01, 0.1, 1]),
-             'n_epochs': hp.choice(label='n_epochs', options=[100]),
-             'eval_epochs': scope.int(hp.choice(label='eval_epochs', options=[4])),
-             'random_seed': scope.int(hp.quniform('random_seed', 1, 10, 1)),
-             }
+    if model == 'resnet18':
+        space = {'model': hp.choice(label='model', options=['resnet18']),
+                 'in_channels': hp.choice(label='in_channels', options=[3]),
+                 'n_classes': hp.choice(label='n_classes', options=[4000]),
+                 'batch_size': scope.int(hp.choice(label='batch_size', options=[1024])),
+                 #'lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(5e-2)),
+                 'lr': hp.choice(label='lr', options=[0.1]),
+                 'lr_decay': hp.choice(label='lr_decay', options=[0.5]),
+                 'n_lr_decay_steps': hp.choice(label='n_lr_decay_steps', options=[2]),
+                 'center_loss': hp.choice(label='center_loss', options=[True]),
+                 'weight_decay': hp.choice(label='weight_decay', options=[0.0004]),
+                 #'lr_cl': hp.loguniform(label='lr_cl', low=np.log(5e-3), high=np.log(2e-1)),
+                 'lr_cl': hp.choice(label='lr_cl', options=[0.005]),
+                 'alpha_cl': hp.choice(label='alpha_cl', options=[0.01, 0.1, 1]),
+                 'n_epochs': hp.choice(label='n_epochs', options=[100]),
+                 'eval_epochs': scope.int(hp.choice(label='eval_epochs', options=[4])),
+                 'random_seed': scope.int(hp.quniform('random_seed', 1, 10, 1)),
+                 }
+    elif model == 'resnetkin':
+        space = {'n_classes': hp.choice(label='n_classes', options=[4000]),
+                 'model': hp.choice(label='model', options=['resnetkin']),
+                 'iterations': hp.choice(label='iterations', options=[300_000]), #(n_samples/batch_size) * epochs = (400_000/128) * 100
+                 'batch_size': scope.int(hp.choice(label='batch_size', options=[128])),
+                 #'initial_lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(5e-2)),
+                 'initial_lr': hp.choice(label='lr', options=[0.1]),
+                 'lr_decay': hp.choice(label='lr_decay', options=[0.5]),
+                 'adjust_lr_step': hp.choice(label='n_lr_decay_steps', options=[300_000//2]),
+                 'weight_decay': hp.choice(label='weight_decay', options=[5e-4]),
+                 'display_step': scope.int(hp.choice(label='eval_epochs', options=[1_000])),
+                 'random_seed': scope.int(hp.quniform('random_seed', 1, 10, 1))}
 
     # Hyperparameters search
     trials = Trials()
@@ -279,4 +306,4 @@ def main(max_evals=2):
 
 # Cell
 if __name__ == "__main__":
-    main(max_evals=2)
+    main(model='resnetkin', max_evals=2)
