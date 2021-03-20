@@ -12,6 +12,9 @@ import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
 
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics import roc_auc_score
+
 import os
 import argparse
 import numpy as np
@@ -77,20 +80,21 @@ class Bottleneck(nn.Module):
 
 
 class _ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, input_size=64, num_classes=10):
         super(_ResNet, self).__init__()
-        self.in_planes = 64
+        self.in_planes = input_size
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3,
+        self.conv1 = nn.Conv2d(3, input_size, kernel_size=3,
                                stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
+        self.bn1 = nn.BatchNorm2d(input_size)
+        self.layer1 = self._make_layer(block, input_size, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
 
         #self.linear = nn.Linear(512*block.expansion, num_classes)
         self.linear = nn.Linear(512*4, num_classes)
+
         print("512*block.expansion", 512*block.expansion)
         print("num_classes", num_classes)
 
@@ -108,10 +112,59 @@ class _ResNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
-        out = self.linear(out)
-        return out
+        embeds = F.avg_pool2d(out, 4)
+        embeds = embeds.view(embeds.size(0), -1)
+        last = self.linear(embeds)
+        return last, embeds
+
+
+# Cell
+class _CenterLoss(nn.Module):
+    """Center loss.
+
+    Reference:
+    Wen et al. A Discriminative Feature Learning Approach for Deep Face Recognition. ECCV 2016.
+
+    Args:
+        num_classes (int): number of classes.
+        feat_dim (int): feature dimension.
+    """
+    def __init__(self, num_classes, feat_dim):
+        super(_CenterLoss, self).__init__()
+        self.num_classes = num_classes
+        self.feat_dim = feat_dim
+        self.centers = nn.Parameter(torch.randn(self.num_classes, self.feat_dim))
+        self.classes = torch.arange(self.num_classes).long().cuda() # HACK PASADO DE LANZA
+
+    def forward(self, x, labels):
+        """
+        Args:
+            x: feature matrix with shape (batch_size, feat_dim).
+            labels: ground truth labels with shape (batch_size).
+        """
+        batch_size = x.size(0)
+
+        distmat = torch.pow(x, 2).sum(dim=1,
+                                      keepdim=True).expand(batch_size,
+                                                           self.num_classes) + \
+                  torch.pow(self.centers, 2).sum(dim=1,
+                                                 keepdim=True).expand(self.num_classes,
+                                                                      batch_size).t()
+
+        distmat = torch.addmm(input=distmat,
+                              mat1=x,
+                              mat2=self.centers.t(),
+                              beta=1,
+                              alpha=-2)
+
+        labels = labels.unsqueeze(1).expand(batch_size, self.num_classes)
+
+        mask = labels.eq(self.classes.expand(batch_size, self.num_classes))
+
+        dist = distmat * mask.float()
+        loss = dist.clamp(min=1e-12, max=1e+12).sum() / batch_size
+
+        return loss
 
 # Cell
 class ResNet(object):
@@ -122,11 +175,15 @@ class ResNet(object):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         # Instantiate model
-        torch.manual_seed(self.params['random_seed'])
-        np.random.seed(self.params['random_seed'])
+        torch.manual_seed(params['random_seed'])
+        np.random.seed(params['random_seed'])
         self.model = _ResNet(block=BasicBlock,
                              num_blocks=[2, 2, 2, 2],
-                             num_classes=params['n_classes']).to(self.device)
+                             num_classes=params['n_classes'],
+                             input_size=params['input_size']).to(self.device)
+
+        self.centroids = _CenterLoss(num_classes=params['n_classes'],
+                                     feat_dim=512*4).to(self.device)
 
     def adjust_lr(self, optimizer, lr_decay):
         for param_group in optimizer.param_groups:
@@ -140,10 +197,11 @@ class ResNet(object):
                                           map_location=torch.device(self.device)))
         self.model.eval()
 
-    def fit(self, train_loader, val_loader):
+    def fit(self, train_loader, val_loader, vrf_loader):
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(self.model.parameters(), lr=self.params['initial_lr'],
                               momentum=0.9, weight_decay=self.params['weight_decay'])
+        coptimizer = optim.SGD(self.centroids.parameters(), lr=self.params['initial_clr'], momentum=0.9)
 
         # Initialize counters and trajectories
         step = 0
@@ -167,19 +225,31 @@ class ResNet(object):
                     continue
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 optimizer.zero_grad()
-                outputs = self.model(inputs)
-                loss = criterion(outputs, targets)
+                coptimizer.zero_grad()
+
+                outputs, embeds = self.model(inputs)
+                loss = criterion(outputs, targets) + \
+                        self.params['alpha'] * self.centroids(embeds, targets)
                 loss.backward()
+
+
+                # weird lr=1 for weird chain rule
+                for p in self.centroids.parameters():
+                    p.grad.data *= (1./self.params['alpha'])
+
+                coptimizer.step()
                 optimizer.step()
 
                 # Evaluate metrics
                 if (step % self.params['display_step']) == 0:
                     train_loss, train_acc = self.evaluate_performance(loader=train_loader, criterion=criterion)
+                    #train_loss, train_acc = 0, 0
                     val_loss, val_acc = self.evaluate_performance(loader=val_loader, criterion=criterion)
+                    roc, _ = self.evaluate_roc(loader=vrf_loader)
+
                     display_str = f'step: {step}\t train_loss: {train_loss:.4f} train_acc {train_acc:.2f}'
-                    display_str += f'\t val_loss: {val_loss:.4f} val_acc: {val_acc:.2f}'
+                    display_str += f'\t val_loss: {val_loss:.4f} val_acc: {val_acc:.2f} roc {roc:.2f}'
                     print(display_str)
-                    print(f'epoch:{epoch}, val_acc:{val_acc}, best_acc: {self.best_acc}')
 
                     if val_acc > self.best_acc:
                         print('Saving..')
@@ -190,7 +260,7 @@ class ResNet(object):
                         }
                         if not os.path.isdir('checkpoint'):
                             os.mkdir('checkpoint')
-                        torch.save(state, f'./checkpoint/ckpt{epoch}.pth')
+                        torch.save(state, f"./checkpoint/{self.params['experiment_id']}_ckpt.pth")
                         self.best_acc = val_acc
 
                 # Update optimizer learning rate
@@ -215,7 +285,7 @@ class ResNet(object):
         with torch.no_grad():
             for batch_idx, (inputs, targets) in enumerate(loader):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                outputs = self.model(inputs)
+                outputs, _ = self.model(inputs)
                 loss = criterion(outputs, targets)
 
                 test_loss += loss.item()
@@ -229,3 +299,29 @@ class ResNet(object):
 
         self.model.train()
         return test_loss, acc
+
+    def evaluate_roc(self, loader):
+        self.model.eval()
+
+        embeds0 = []
+        embeds1 = []
+        targets = []
+
+        with torch.no_grad():
+            for batch_idx, (img0, img1, target) in enumerate(loader):
+                img0 = img0.to(self.device)
+                img1 = img1.to(self.device)
+
+                embeds0 += [self.model(img0)[1].cpu().numpy()]
+                embeds1 += [self.model(img1)[1].cpu().numpy()]
+                targets += [np.expand_dims(target.cpu().numpy(), 1)]
+
+        embeds0  = np.vstack(embeds0)
+        embeds1  = np.vstack(embeds1)
+        targets  = np.vstack(targets)
+
+        sim_score = np.sum((embeds0 - embeds1) ** 2, axis=1, keepdims=True)
+        roc = roc_auc_score(y_true=targets, y_score=sim_score)
+
+        self.model.train()
+        return roc, sim_score

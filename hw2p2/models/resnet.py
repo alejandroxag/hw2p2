@@ -397,7 +397,6 @@ class ResNetN():
         print("="*30 + 'Start Fitting' + "="*30)
         self.model.to(self.device)
 
-
         cross_entroypy_loss_f = nn.CrossEntropyLoss()
         center_loss_f = CenterLoss(num_classes=self.n_classes,
                                    feat_dim=self.n_embeddings,
@@ -528,30 +527,30 @@ class ResNetN():
         val_c_loss /= len(val_c_loader)
         val_c_acc = correct_predictions/total_predictions
 
-#         similarity = np.array([])
-#         ver_bool = np.array([])
+        similarity = np.array([])
+        ver_bool = np.array([])
 
-#         with torch.no_grad():
-#             for batch_idx, (img_0, img_1, target) in enumerate(val_v_loader):
-#                 img_0 = img_0.to(self.device)
-#                 img_1 = img_1.to(self.device)
+        with torch.no_grad():
+            for batch_idx, (img_0, img_1, target) in enumerate(val_v_loader):
+                img_0 = img_0.to(self.device)
+                img_1 = img_1.to(self.device)
 
-#                 emb_0 = self.model(img_0)[0]
-#                 emb_1 = self.model(img_1)[0]
+                emb_0 = self.model(img_0)[0]
+                emb_1 = self.model(img_1)[0]
 
-#                 sim_score = cosine_similarity(emb_0, emb_1)
-#                 similarity = np.append(similarity, sim_score.cpu().numpy().reshape(-1))
-#                 ver_bool = np.append(ver_bool, target)
+                sim_score = cosine_similarity(emb_0, emb_1)
+                similarity = np.append(similarity, sim_score.cpu().numpy().reshape(-1))
+                ver_bool = np.append(ver_bool, target)
 
-#         try:
-#             val_v_acc = roc_auc_score(ver_bool, similarity)
-#         except:
-#             print('ROC calculation error')
-#             print(similarity)
-#             print(ver_bool)
-#             print(emb_0)
-#             print(emb_1)
-#             val_v_acc = -1
+        try:
+            val_v_acc = roc_auc_score(ver_bool, similarity)
+        except:
+            print('ROC calculation error')
+            print(similarity)
+            print(ver_bool)
+            print(emb_0)
+            print(emb_1)
+            val_v_acc = -1
 
         self.model.train()
         #return val_c_loss, val_c_acc, val_v_acc
