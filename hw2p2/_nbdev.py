@@ -2,7 +2,7 @@
 
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
-index = {"CenterLoss": "face_class_ver.ipynb",
+index = {"CenterLoss": "center_loss.ipynb",
          "FaceClassificationDataset": "face_class_ver.ipynb",
          "FaceVerificationDataset": "face_class_ver.ipynb",
          "SIZE": "face_class_ver.ipynb",
