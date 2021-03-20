@@ -357,7 +357,9 @@ class ResNet(object):
                                  momentum=0.9, weight_decay=params['weight_decay'])
         scheduler = optim.lr_scheduler.StepLR(optimizer4nn, step_size=params['adjust_lr_step'],
                                               gamma=params['lr_decay'])
-        #optimizer4center = optim.SGD(self.centerloss.parameters(), lr =params['initial_clr'])
+
+        if params['with_center_loss']:
+            optimizer4center = optim.SGD(self.centerloss.parameters(), lr =params['initial_clr'])
 
         #---------------------------------------- Logging -----------------------------------------#
         step = 0
@@ -382,19 +384,30 @@ class ResNet(object):
                     continue
 
                 #--------------------------------- Forward and Backward ---------------------------------#
-                inputs, targets = inputs.to(self.device), targets.to(self.device)
+                if not params['with_center_loss']:
+                    inputs, targets = inputs.to(self.device), targets.to(self.device)
 
-                optimizer4nn.zero_grad()
-                #optimzer4center.zero_grad()
-                outputs, embeds = self.model(inputs)
+                    optimizer4nn.zero_grad()
+                    outputs, embeds = self.model(inputs)
 
-                loss = criterion(outputs, targets)
-                #loss = criterion(outputs, targets) + \
-                #            params['alpha'] * self.centerloss(label=targets, feat=embeds)
+                    loss = criterion(outputs, targets)
 
-                loss.backward()
-                optimizer4nn.step()
-                #optimizer4center.step()
+                    loss.backward()
+                    optimizer4nn.step()
+
+                if params['with_center_loss']:
+                    inputs, targets = inputs.to(self.device), targets.to(self.device)
+
+                    optimizer4nn.zero_grad()
+                    optimzer4center.zero_grad()
+                    outputs, embeds = self.model(inputs)
+
+                    loss = criterion(outputs, targets) + \
+                               params['alpha'] * self.centerloss(label=targets, feat=embeds)
+
+                    loss.backward()
+                    optimizer4nn.step()
+                    optimizer4center.step()
 
 
                 #----------------------------------- Evaluate metrics -----------------------------------#
@@ -568,7 +581,7 @@ def main(args, max_evals):
              #------------------------------ Optimization Regularization -----------------------------#
              #'iterations': hp.choice(label='iterations', options=[300_000]), #(n_samples/batch_size) * epochs = (400_000/128) * 100
              #'display_step': scope.int(hp.choice(label='display_step', options=[3_000])),
-             #'iterations': hp.choice(label='iterations', options=[100]),
+             'iterations': hp.choice(label='iterations', options=[100]),
              'display_step': scope.int(hp.choice(label='display_step', options=[50])),
              'batch_size': scope.int(hp.choice(label='batch_size', options=[128])),
              #'initial_lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(0.1)),
@@ -576,7 +589,7 @@ def main(args, max_evals):
              'lr_decay': scope.float(hp.choice(label='lr_decay', options=[0.5])),
              'adjust_lr_step': hp.choice(label='adjust_lr_step', options=[300_000//3]),
              'weight_decay': hp.choice(label='weight_decay', options=[5e-4]),
-             'with_center_loss': hp.choice(label='with_center_loss', options=[True]),
+             'with_center_loss': hp.choice(label='with_center_loss', options=[args.with_center_loss]),
              'initial_clr': hp.choice(label='initial_clr', options=[0.01, 0.05, 0.1, 0.5]),
              'alpha': hp.choice(label='alpha', options=[0.1, 0.01]),
              #'display_step': scope.int(hp.choice(label='eval_epochs', options=[3_000])),
@@ -599,12 +612,13 @@ def parse_args():
     desc = "Classification/anomaly detection shared trend metric experiment"
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--experiment_id', required=True, type=str, help='string to identify experiment')
+    parser.add_argument('--with_center_loss', required=True, type=bool, help='Wether center loss is used')
     return parser.parse_args()
 
 # Cell
 if __name__ == "__main__":
     #args = parse_args()
-    args = pd.Series({'experiment_id': 'security'})
+    args = pd.Series({'experiment_id': 'security', 'with_center_loss': False})
     main(args, max_evals=1)
 
 # Cell
