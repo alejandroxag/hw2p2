@@ -439,7 +439,7 @@ class ResNet(object):
                 scheduler.step()
 
         #---------------------------------------- Final Logs -----------------------------------------#
-        print('\n'+'='*35+' Finished Train '+'='*35)
+        print('\n'+'='*43+' Finished Train '+'='*43)
         self.train_loss   = trajectories['train_loss'][-1]
         self.train_acc    = trajectories['train_acc'][-1]
         self.val_loss     = trajectories['val_loss'][-1]
@@ -574,15 +574,14 @@ def main(args, max_evals):
     # Hyperparameters space
     model_path = f"./checkpoint/{args.experiment_id}_ckpt.pth"
     trials_path = f"./results/{args.experiment_id}_trials.p"
+    display_step = args.iterations//100 if args.iterations > 1000 else 10 # relative display steps
     space = {#------------------------------------- Architecture -------------------------------------#
              'experiment_id': hp.choice(label='experiment_id', options=[args.experiment_id]),
              'input_size': hp.choice(label='input_size', options=[SIZE]),
              'n_classes': hp.choice(label='n_classes', options=[4_000]),
              #------------------------------ Optimization Regularization -----------------------------#
-             #'iterations': hp.choice(label='iterations', options=[300_000]), #(n_samples/batch_size) * epochs = (400_000/128) * 100
-             #'display_step': scope.int(hp.choice(label='display_step', options=[3_000])),
-             'iterations': hp.choice(label='iterations', options=[100]),
-             'display_step': scope.int(hp.choice(label='display_step', options=[50])),
+             'iterations': hp.choice(label='iterations', options=[args.iterations]),
+             'display_step': scope.int(hp.choice(label='display_step', options=[display_step])),
              'batch_size': scope.int(hp.choice(label='batch_size', options=[128])),
              #'initial_lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(0.1)),
              'initial_lr': scope.float(hp.choice(label='initial_lr', options=[0.1])),
@@ -611,14 +610,17 @@ def main(args, max_evals):
 def parse_args():
     desc = "Classification/anomaly detection shared trend metric experiment"
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--experiment_id', required=True, type=str, help='string to identify experiment')
+    parser.add_argument('--iterations', required=True, type=int, help='Iterations to train network')
     parser.add_argument('--with_center_loss', required=True, type=bool, help='Wether center loss is used')
+    parser.add_argument('--experiment_id', required=True, type=str, help='string to identify experiment')
     return parser.parse_args()
 
 # Cell
 if __name__ == "__main__":
     #args = parse_args()
-    args = pd.Series({'experiment_id': 'security', 'with_center_loss': False})
+    args = pd.Series({'iterations': 20,
+                      'with_center_loss': False,
+                      'experiment_id': 'security'})
     main(args, max_evals=1)
 
 # Cell
