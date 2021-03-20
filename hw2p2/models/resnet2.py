@@ -179,7 +179,7 @@ class ResNet(object):
                     display_str = f'step: {step}\t train_loss: {train_loss:.4f} train_acc {train_acc:.2f}'
                     display_str += f'\t val_loss: {val_loss:.4f} val_acc: {val_acc:.2f}'
                     print(display_str)
-                    print(f'apoch:{epoch}, val_acc:{val_acc}, best_acc: {self.best_acc}')
+                    print(f'epoch:{epoch}, val_acc:{val_acc}, best_acc: {self.best_acc}')
 
                     if val_acc > self.best_acc:
                         print('Saving..')

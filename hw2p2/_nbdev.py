@@ -34,7 +34,7 @@ index = {"CenterLoss": "center_loss.ipynb",
 
 modules = ["losses.py",
            "datasets.py",
-           "face_class_ver.py",
+           "main.py",
            "hyperoptimization.py",
            "kaggle_data_setup.py",
            "models/mobilenet.py",
