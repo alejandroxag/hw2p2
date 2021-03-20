@@ -574,6 +574,6 @@ def parse_args():
 
 # Cell
 if __name__ == "__main__":
-    #args = parse_args()
-    args = pd.Series({'experiment_id': 'exp1'})
-    main(args, max_evals=2)
+    args = parse_args()
+    #args = pd.Series({'experiment_id': 'exp1'})
+    main(args, max_evals=10)
