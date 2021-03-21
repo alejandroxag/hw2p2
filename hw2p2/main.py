@@ -346,6 +346,7 @@ class ResNet(object):
                              input_size=params['input_size']).to(self.device)
         self.centerloss = _CenterLoss(num_classes=params['n_classes'],
                                       feat_dim=512*4).to(self.device)
+        self.model = nn.DataParallel(self.model)
 
     def fit(self, train_loader, val_loader, vrf_loader):
 
@@ -357,6 +358,8 @@ class ResNet(object):
                                  momentum=0.9, weight_decay=params['weight_decay'])
         scheduler = optim.lr_scheduler.StepLR(optimizer4nn, step_size=params['adjust_lr_step'],
                                               gamma=params['lr_decay'])
+
+        scaler = torch.cuda.amp.GradScaler()
 
         if params['with_center_loss']:
             optimizer4center = optim.SGD(self.centerloss.parameters(), lr =params['initial_clr'])
@@ -386,14 +389,18 @@ class ResNet(object):
                 #--------------------------------- Forward and Backward ---------------------------------#
                 if not params['with_center_loss']:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
-
                     optimizer4nn.zero_grad()
-                    outputs, embeds = self.model(inputs)
 
-                    loss = criterion(outputs, targets)
+                    with torch.cuda.amp.autocast():
+                        outputs, embeds = self.model(inputs)
 
-                    loss.backward()
-                    optimizer4nn.step()
+                        loss = criterion(outputs, targets)
+
+                        #loss.backward()
+                        #optimizer4nn.step()
+                        scaler.scale(loss).backward()
+                        scaler.step(optimizer4nn)
+                        scaler.update()
 
                 if params['with_center_loss']:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
@@ -530,7 +537,15 @@ class ResNet(object):
         self.model.train()
         return sim_score
 
+    def turn_to_half(self):
+        self.model.half()  # convert to half precision
+        for layer in self.model.modules():
+            if isinstance(layer, nn.BatchNorm2d):
+                layer.float()
+
     def save_weights(self, path):
+        if not os.path.exists('./checkpoint/'):
+            os.makedirs('./checkpoint/')
         torch.save(self.model.state_dict(), path)
 
     def load_weights(self, path):
@@ -582,13 +597,13 @@ def main(args, max_evals):
              #------------------------------ Optimization Regularization -----------------------------#
              'iterations': hp.choice(label='iterations', options=[args.iterations]),
              'display_step': scope.int(hp.choice(label='display_step', options=[display_step])),
-             'batch_size': scope.int(hp.choice(label='batch_size', options=[128])),
+             'batch_size': scope.int(hp.choice(label='batch_size', options=[512])),
              #'initial_lr': hp.loguniform(label='lr', low=np.log(5e-3), high=np.log(0.1)),
              'initial_lr': scope.float(hp.choice(label='initial_lr', options=[0.1])),
              'lr_decay': scope.float(hp.choice(label='lr_decay', options=[0.5])),
              'adjust_lr_step': hp.choice(label='adjust_lr_step', options=[300_000//3]),
              'weight_decay': hp.choice(label='weight_decay', options=[5e-4]),
-             'with_center_loss': hp.choice(label='with_center_loss', options=[args.with_center_loss]),
+             'with_center_loss': hp.choice(label='with_center_loss', options=[bool(args.with_center_loss)]),
              'initial_clr': hp.choice(label='initial_clr', options=[0.01, 0.05, 0.1, 0.5]),
              'alpha': hp.choice(label='alpha', options=[0.1, 0.01]),
              #'display_step': scope.int(hp.choice(label='eval_epochs', options=[3_000])),
@@ -611,16 +626,16 @@ def parse_args():
     desc = "Classification/anomaly detection shared trend metric experiment"
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--iterations', required=True, type=int, help='Iterations to train network')
-    parser.add_argument('--with_center_loss', required=True, type=bool, help='Wether center loss is used')
+    parser.add_argument('--with_center_loss', required=True, type=int, help='Wether center loss is used (1, 0)')
     parser.add_argument('--experiment_id', required=True, type=str, help='string to identify experiment')
     return parser.parse_args()
 
 # Cell
 if __name__ == "__main__":
-    #args = parse_args()
-    args = pd.Series({'iterations': 20,
-                      'with_center_loss': False,
-                      'experiment_id': 'security'})
+    args = parse_args()
+    #args = pd.Series({'iterations': 10,
+    #                  'with_center_loss': False,
+    #                  'experiment_id': 'security'})
     main(args, max_evals=1)
 
 # Cell

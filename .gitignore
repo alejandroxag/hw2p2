@@ -5,6 +5,10 @@ results/
 nbs/checkpoint/
 checkpoint/
 
+results/original_distribution.png
+results/train_dataset.png
+results/train_distribution.png
+
 *.bak
 .gitattributes
 .last_checked
