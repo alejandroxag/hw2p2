@@ -347,6 +347,7 @@ class ResNet(object):
         self.centerloss = _CenterLoss(num_classes=params['n_classes'],
                                       feat_dim=512*4).to(self.device)
         self.model = nn.DataParallel(self.model)
+        self.cos_sim = nn.CosineSimilarity(dim=1, eps=1e-6)
 
     def fit(self, train_loader, val_loader, vrf_loader):
 
@@ -479,8 +480,7 @@ class ResNet(object):
     def evaluate_roc(self, loader):
         self.model.eval()
 
-        embeds0 = []
-        embeds1 = []
+        similarity = []
         targets = []
 
         with torch.no_grad():
@@ -488,19 +488,22 @@ class ResNet(object):
                 img0 = img0.to(self.device)
                 img1 = img1.to(self.device)
 
-                embeds0 += [self.model(img0)[1].cpu().numpy()]
-                embeds1 += [self.model(img1)[1].cpu().numpy()]
-                targets += [np.expand_dims(target.cpu().numpy(), 1)]
+                embeds0 = self.model(img0)[1]
+                embeds1 = self.model(img1)[1]
 
-        embeds0  = np.vstack(embeds0)
-        embeds1  = np.vstack(embeds1)
-        targets  = np.vstack(targets)
+                similarity.append(self.cos_sim(embeds0, embeds1))
+                targets.append(target)
 
-        sim_score = np.sum((embeds0 - embeds1) ** 2, axis=1, keepdims=True)
-        roc = roc_auc_score(y_true=targets, y_score=sim_score)
+        similarity = torch.stack(similarity, dim=0)
+        similarity = torch.reshape(similarity, shape=(-1,))
+        targets = torch.stack(targets, dim=0)
+        targets = torch.reshape(targets, shape=(-1,))
+
+        roc = roc_auc_score(targets.detach().cpu().numpy(),
+                            similarity.detach().cpu().numpy())
 
         self.model.train()
-        return roc, sim_score
+        return roc, similarity
 
     def predict_labels(self, loader):
         self.model.eval()
@@ -520,22 +523,23 @@ class ResNet(object):
     def predict_similarity(self, loader):
         self.model.eval()
 
-        embeds0 = []
-        embeds1 = []
+        similarity = []
+
         with torch.no_grad():
             for batch_idx, (img0, img1, target) in enumerate(loader):
                 img0 = img0.to(self.device)
                 img1 = img1.to(self.device)
 
-                embeds0 += [self.model(img0)[1].cpu().numpy()]
-                embeds1 += [self.model(img1)[1].cpu().numpy()]
+                embeds0 = self.model(img0)[1]
+                embeds1 = self.model(img1)[1]
 
-        embeds0  = np.vstack(embeds0)
-        embeds1  = np.vstack(embeds1)
+                similarity.append(self.cos_sim(embeds0, embeds1))
 
-        sim_score = np.sum((embeds0 - embeds1) ** 2, axis=1, keepdims=True)
-        self.model.train()
-        return sim_score
+        similarity = torch.stack(similarity, dim=0)
+        similarity = torch.reshape(similarity, shape=(-1,))
+
+        # self.model.train() Here it's not necessary to send model to train, this is just for final predictions
+        return similarity
 
     def turn_to_half(self):
         self.model.half()  # convert to half precision
